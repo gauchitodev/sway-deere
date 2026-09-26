@@ -1746,7 +1746,7 @@
           : n.conocida ? boton(`data-h="conectar" data-red="${esc(n.nombre)}"${tr ? " disabled" : ""}`, "Conectar")
           : boton('data-h="otra"', "Nueva…")}</span></div>`).join("")}</div>`}
         <div class="hoja-botones">${boton(`data-h="buscar"${tr ? " disabled" : ""}`, tr === "buscar" ? "Buscando…" : "Buscar redes", "prin")}${boton('data-h="otra"', "Conectar a una red nueva")}</div>
-        <div class="hoja-aviso">Las redes nuevas piden contraseña: se abre <code>iwctl</code>. Ahí escribí <code>station wlan0 connect "Nombre"</code> y la contraseña.</div>`;
+        <div class="hoja-aviso">Las redes nuevas piden contraseña: se abre la ventana de wifi (también con Super+Shift+W o tocando el wifi en la barra).</div>`;
     } },
 
     net: { tit: "Datos usados", extra: true, cada: 15000, vivo: (d, x) => {

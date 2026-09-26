@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="es" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<title>Wifi G5</title>
+<style>
+  :root {
+    --green: #367c2b; --green-deep: #1d5a1c; --green-bright: #5ea23a;
+    --status: #0f4a3f; --yellow: #ffde00; --yellow-ink: #1b211c; --crit: #c8322b;
+    --font: "Cantarell", "Noto Sans", sans-serif;
+    --screen: #eceeea; --tile: #f8f9f6; --tile-edge: #b6beb8; --head: #dfe4df;
+    --bar-off: #c9cfca; --ink: #1b211c; --muted: #59625b; --pill: #d4ead0; --pill-ink: #1d5a1c;
+  }
+  html[data-mode="noche"] {
+    color-scheme: dark;
+    --screen: #2f2b26; --tile: #3a352f; --tile-edge: #585045; --head: #342f29;
+    --bar-off: #4d463d; --ink: #ede7da; --muted: #b2a894; --status: #0b3a31;
+    --pill: #25401f; --pill-ink: #b9e0a8;
+  }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--screen); color: var(--ink); font: 16px var(--font);
+    display: grid; grid-template-rows: auto auto auto 1fr auto; overflow: hidden;
+    user-select: none; -webkit-user-select: none; touch-action: manipulation;
+  }
+  button { font-family: var(--font); cursor: pointer; touch-action: manipulation; }
+
+  /* Barra de título verde, como la de la G5 */
+  .titulo {
+    display: flex; align-items: center; gap: 12px; min-height: 52px; padding-left: 16px;
+    background: linear-gradient(to right, var(--green-deep), var(--green) 55%, var(--green-bright));
+    color: #fff; font-size: 19px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  }
+  .titulo svg { width: 24px; height: 24px; }
+  .titulo .cerrar {
+    margin-left: auto; align-self: stretch; width: 60px; border: 0; background: rgba(0, 0, 0, .18);
+    color: #fff; font-size: 26px; line-height: 1;
+  }
+  .titulo .cerrar:active { background: var(--yellow); color: var(--yellow-ink); }
+
+  /* Bloque de estado verde azulado: la red de ahora */
+  .estado {
+    display: flex; align-items: center; gap: 16px; padding: 16px;
+    background: var(--status); color: #fff;
+  }
+  .estado .txt { flex: 1; min-width: 0; display: grid; gap: 3px; }
+  .estado b { font-size: 26px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .estado span { font-size: 14px; color: #bfd8cf; font-variant-numeric: tabular-nums; }
+  .estado .barras i { background: rgba(255, 255, 255, .22); }
+  .estado .barras i.on { background: var(--yellow); }
+  .estado .chip { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .5); }
+  .estado .chip:active { background: var(--yellow); color: var(--yellow-ink); }
+
+  .cab {
+    display: flex; align-items: center; justify-content: space-between; padding: 9px 16px;
+    background: var(--head); border-bottom: 1px solid var(--tile-edge);
+    font-size: 13px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted);
+  }
+  .aviso { font-size: 14px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+  .aviso.mal { color: var(--crit); }
+  .aviso.bien { color: var(--green); }
+  html[data-mode="noche"] .aviso.bien { color: var(--green-bright); }
+
+  .lista { overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+  .red { border-bottom: 1px solid var(--tile-edge); background: var(--tile); }
+  .fila {
+    display: flex; align-items: center; gap: 14px; width: 100%; min-height: 62px; padding: 0 16px;
+    border: 0; background: transparent; color: inherit; text-align: left; font-size: 17px;
+  }
+  .fila .nom { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fila em { font-style: normal; font-size: 13px; color: var(--muted); }
+  .tag { font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 3px; background: var(--pill); color: var(--pill-ink); }
+  .candado { width: 18px; height: 18px; flex: none; opacity: .65; }
+  /* La red elegida va en amarillo, como el menú de la G5 */
+  .red.sel .fila { background: var(--yellow); color: var(--yellow-ink); font-weight: 700; }
+  .red.sel .fila em { color: #4a4300; }
+  .red.sel .barras i { background: rgba(27, 33, 28, .2); }
+  .red.sel .barras i.on { background: var(--yellow-ink); }
+
+  .barras { display: flex; align-items: flex-end; gap: 3px; height: 22px; flex: none; }
+  .barras i { width: 5px; background: var(--bar-off); border-radius: 1px; }
+  .barras i.on { background: var(--green); }
+  .barras i:nth-child(1) { height: 25%; } .barras i:nth-child(2) { height: 50%; }
+  .barras i:nth-child(3) { height: 75%; } .barras i:nth-child(4) { height: 100%; }
+
+  .abierto { display: grid; gap: 12px; padding: 14px 16px 16px; border-top: 1px solid var(--tile-edge); }
+  .abierto[hidden] { display: none; }
+  .clave { display: flex; gap: 8px; }
+  .clave input {
+    flex: 1; min-width: 0; min-height: 50px; padding: 0 14px; font: 18px var(--font);
+    background: var(--screen); color: var(--ink); border: 2px solid var(--tile-edge); border-radius: 3px; outline: none;
+  }
+  .clave input:focus { border-color: var(--green); }
+  .botones { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip {
+    min-height: 50px; padding: 0 20px; font-size: 16px; font-weight: 700;
+    background: var(--tile); color: var(--ink); border: 1px solid var(--tile-edge); border-radius: 3px;
+  }
+  .chip:active { background: var(--head); }
+  .chip.prin { background: var(--green); color: #fff; border-color: var(--green-deep); }
+  .chip.prin:active { background: var(--green-bright); }
+  .chip.peligro { color: var(--crit); }
+  .chip:disabled { opacity: .45; }
+  .nota { font-size: 14px; color: var(--muted); }
+  .vacio { padding: 26px 16px; color: var(--muted); }
+
+  /* Barra de abajo, como la de accesos de la pantalla de inicio */
+  .abajo {
+    display: flex; gap: 10px; padding: 10px 16px; background: var(--head); border-top: 1px solid var(--tile-edge);
+  }
+  .abajo .chip { flex: 1; }
+</style>
+</head>
+<body>
+  <div class="titulo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 9a15 15 0 0 1 20 0"/><path d="M5.5 12.5a10 10 0 0 1 13 0"/><path d="M9 16a5 5 0 0 1 6 0"/><circle cx="12" cy="19.5" r="1"/></svg>
+    Wifi
+    <button type="button" class="cerrar" id="cerrar" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="estado" id="estado"></div>
+  <div class="cab"><span>Redes cerca</span><span class="aviso" id="aviso"></span></div>
+  <div class="lista" id="lista"><div class="vacio">Buscando…</div></div>
+  <div class="abajo"><button type="button" class="chip prin" id="buscar">Buscar redes</button></div>
+
+<script>
+  const TOKEN = "__G5_TOKEN__";
+  const HACIENDO = { buscar: "Buscando redes…", conectar: "Conectando…", nueva: "Conectando…",
+                     olvidar: "Olvidando…", desconectar: "Desconectando…" };
+  const FALLO = { buscar: "No se pudo buscar", conectar: "No se pudo conectar",
+                  nueva: "No se pudo conectar. ¿La contraseña está bien?",
+                  olvidar: "No se pudo olvidar", desconectar: "No se pudo desconectar" };
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const nivel = (dbm) => dbm == null ? 0 : dbm >= -55 ? 4 : dbm >= -67 ? 3 : dbm >= -75 ? 2 : dbm >= -85 ? 1 : 0;
+  const barras = (dbm) => `<span class="barras">${[1, 2, 3, 4].map((i) => `<i class="${i <= nivel(dbm) ? "on" : ""}"></i>`).join("")}</span>`;
+  const CANDADO = '<svg class="candado" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+
+  let datos = null, elegida = null, pendiente = null, ultimoTrabajo = null, reloj = null;
+
+  async function api(metodo, cuerpo) {
+    const r = await fetch("/api/wifi", { method: metodo, headers: { "X-G5-Token": TOKEN, "Content-Type": "application/json" },
+                                         body: cuerpo ? JSON.stringify(cuerpo) : undefined });
+    if (r.status === 403) { location.reload(); throw new Error("clave vieja"); }
+    return r.json();
+  }
+
+  function aviso(txt, cls) { const a = $("aviso"); a.textContent = txt || ""; a.className = "aviso " + (cls || ""); }
+
+  function dibujarEstado() {
+    const a = datos.actual || {}, tr = datos.trabajo;
+    $("estado").innerHTML = a.ssid
+      ? `${barras(a.dbm)}<div class="txt"><b>${esc(a.ssid)}</b><span>Conectado${a.dbm != null ? " · " + a.dbm + " dBm" : ""}${datos.ip ? " · " + esc(datos.ip) : ""}</span></div>
+         <button type="button" class="chip" data-accion="desconectar"${tr ? " disabled" : ""}>Desconectar</button>`
+      : `${barras(null)}<div class="txt"><b>Sin conexión</b><span>Elegí una red de la lista</span></div>`;
+  }
+
+  function dibujarLista() {
+    const tr = datos.trabajo, lista = $("lista");
+    // No redibujar mientras escribís la contraseña (se perdería lo escrito)
+    if (document.activeElement && document.activeElement.id === "clave") return;
+    if (!datos.redes.length) { lista.innerHTML = '<div class="vacio">No veo redes. Tocá Buscar redes.</div>'; return; }
+    lista.innerHTML = datos.redes.map((r) => {
+      const sel = r.nombre === elegida, seg = r.seguridad;
+      let cuerpo;
+      if (r.conectada) {
+        cuerpo = `<div class="nota">Estás conectado a esta red.</div><div class="botones">
+          <button type="button" class="chip" data-accion="desconectar"${tr ? " disabled" : ""}>Desconectar</button>
+          <button type="button" class="chip peligro" data-accion="olvidar"${tr ? " disabled" : ""}>Olvidar red</button></div>`;
+      } else if (r.conocida) {
+        cuerpo = `<div class="botones"><button type="button" class="chip prin" data-accion="conectar"${tr ? " disabled" : ""}>Conectar</button>
+          <button type="button" class="chip peligro" data-accion="olvidar"${tr ? " disabled" : ""}>Olvidar red</button></div>`;
+      } else if (seg === "psk") {
+        cuerpo = `<div class="clave"><input id="clave" type="password" placeholder="Contraseña" autocomplete="off" spellcheck="false" maxlength="64">
+          <button type="button" class="chip" id="ver" aria-label="Mostrar contraseña">Ver</button></div>
+          <div class="botones"><button type="button" class="chip prin" data-accion="nueva"${tr ? " disabled" : ""}>Conectar</button></div>`;
+      } else if (seg === "open") {
+        cuerpo = `<div class="nota">Red abierta: no tiene contraseña y cualquiera puede ver lo que mandás.</div>
+          <div class="botones"><button type="button" class="chip prin" data-accion="nueva"${tr ? " disabled" : ""}>Conectar igual</button></div>`;
+      } else {
+        cuerpo = `<div class="nota">Esta red pide usuario y certificado (${esc(seg)}). Eso no se puede desde acá.</div>`;
+      }
+      return `<div class="red${sel ? " sel" : ""}" data-red="${esc(r.nombre)}">
+        <button type="button" class="fila">${barras(r.dbm)}<span class="nom">${esc(r.nombre)}</span>
+          ${r.conectada ? '<span class="tag">Conectado</span>' : r.conocida ? '<span class="tag">Guardada</span>' : ""}
+          ${seg === "open" ? "<em>abierta</em>" : CANDADO}</button>
+        <div class="abierto"${sel ? "" : " hidden"}>${cuerpo}</div></div>`;
+    }).join("");
+    const c = $("clave");
+    if (c) c.focus();
+  }
+
+  function dibujar() {
+    document.documentElement.dataset.mode = datos.modo === "noche" ? "noche" : "dia";
+    const tr = datos.trabajo;
+    if (tr) aviso(HACIENDO[tr]);
+    else if (ultimoTrabajo && datos.error) aviso(FALLO[datos.error] || "No se pudo", "mal");
+    else if (ultimoTrabajo && pendiente && (ultimoTrabajo === "nueva" || ultimoTrabajo === "conectar")
+             && (datos.actual || {}).ssid === pendiente) aviso("Conectado a " + pendiente, "bien");
+    else if (ultimoTrabajo) aviso("");
+    if (!tr) ultimoTrabajo = null;
+    $("buscar").disabled = !!tr;
+    $("buscar").textContent = tr === "buscar" ? "Buscando…" : "Buscar redes";
+    dibujarEstado();
+    dibujarLista();
+  }
+
+  async function actualizar() {
+    clearTimeout(reloj);
+    try { datos = await api("GET"); dibujar(); } catch (e) { /* el servidor se está reiniciando */ }
+    reloj = setTimeout(actualizar, datos && datos.trabajo ? 1500 : 6000);
+  }
+
+  async function hacer(que, red, clave) {
+    pendiente = red || null;
+    const r = await api("POST", { que, red, clave }).catch(() => ({ ok: false }));
+    if (!r.ok) { aviso(que === "nueva" && clave != null ? "La contraseña tiene que tener entre 8 y 63 letras" : FALLO[que] || "No se pudo", "mal"); return; }
+    ultimoTrabajo = que;
+    if (que === "desconectar") elegida = null;
+    const c = $("clave"); if (c) c.blur();
+    actualizar();
+  }
+
+  document.addEventListener("click", (ev) => {
+    const b = ev.target.closest("button");
+    if (!b) return;
+    const caja = b.closest(".red"), red = caja ? caja.dataset.red : null;
+    if (b.id === "cerrar") return window.close();
+    if (b.id === "buscar") return hacer("buscar");
+    if (b.id === "ver") { const c = $("clave"); c.type = c.type === "password" ? "text" : "password"; b.textContent = c.type === "password" ? "Ver" : "Ocultar"; c.focus(); return; }
+    if (b.classList.contains("fila")) {
+      elegida = elegida === red ? null : red;
+      aviso("");
+      if (document.activeElement) document.activeElement.blur();
+      return dibujarLista();
+    }
+    const que = b.dataset.accion;
+    if (!que) return;
+    if (que === "desconectar") return hacer("desconectar");
+    if (que === "nueva") {
+      const c = $("clave");
+      return hacer("nueva", red, c ? c.value : undefined);
+    }
+    hacer(que, red);
+  });
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") window.close();
+    if (ev.key === "Enter" && ev.target.id === "clave") hacer("nueva", elegida, ev.target.value);
+  });
+
+  actualizar();
+  hacer("buscar");
+</script>
+</body>
+</html>

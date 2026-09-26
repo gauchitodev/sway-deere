@@ -76,6 +76,9 @@ Pantalla de login (opcional) para compus con dos usuarios: cada uno de un lado d
   visor verde azulado, operaciones en amarillo, coma decimal y punto de miles como en Uruguay, las últimas
   cuentas arriba y anda con el teclado numérico. Sigue el modo día o noche de la pantalla de inicio.
   El teclado numérico arranca con Bloq Num prendido.
+- **Ventana de wifi G5** (Super+Shift+W o tocar el wifi en la barra): redes cerca con su señal, conectarse
+  a una red nueva escribiendo la contraseña, conectarse a las guardadas, desconectar y olvidar. Usa iwd
+  por D-Bus (la contraseña no aparece en la lista de procesos) y sigue el modo día o noche.
 - Fondo de pantalla y pantalla de bloqueo con fotos propias de una S770 en cosecha.
 - **Pantalla de login** opcional (tema para LightDM): dos usuarios a los lados de una diagonal, cada uno con
   su foto y su color. Se elige con el dedo, el mouse o `Super+flechas`, y la clave usa el mismo aro que el
@@ -123,6 +126,7 @@ Se puede correr las veces que quieras.
 | Adelantar un tema | arrastrar la barra del panel de música |
 | Menú de apps | botón verde **Menú** (se cierra con la X amarilla o Esc) |
 | Calculadora | tecla de calculadora (otra vez la cierra); Ctrl+C copia el resultado |
+| Conectarse a un wifi | Super+Shift+W o tocar el wifi en la barra (otra vez la cierra); Esc también |
 
 ## Pantalla de login (opcional)
 

@@ -1050,6 +1050,11 @@ def _wifi_leer():
     _wifi.update(t=time.time(), redes=redes[:12], conocidas=conocidas)
 
 
+def wifi_ip():
+    m = re.search(r"inet (\S+)", correr(["ip", "-4", "-o", "addr", "show", "wlan0"], timeout=3))
+    return m.group(1) if m else None
+
+
 def wifi_info():
     if DEMO:
         return {"redes": [{"nombre": "MiWifi", "seguridad": "psk", "dbm": -48, "conectada": True, "conocida": True},
@@ -1061,12 +1066,18 @@ def wifi_info():
             "trabajo": _wifi["trabajo"], "error": _wifi["error"]}
 
 
-def _wifi_hacer(que, red):
+WIFI_CONECTAR = os.path.join(os.path.dirname(CARPETA), "wifi", "conectar.py")
+
+
+def _wifi_hacer(que, red, clave=""):
     cmd = {"buscar": ["iwctl", "station", "wlan0", "scan"],
            "conectar": ["iwctl", "station", "wlan0", "connect", red or ""],
+           # Red nueva: la contraseña va por stdin, así no se ve en la lista de procesos
+           "nueva": ["python3", WIFI_CONECTAR, red or ""],
+           "olvidar": ["iwctl", "known-networks", red or "", "forget"],
            "desconectar": ["iwctl", "station", "wlan0", "disconnect"]}[que]
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        r = subprocess.run(cmd, input=clave, capture_output=True, text=True, timeout=60)
         if r.returncode != 0:
             _wifi["error"] = que
     except (OSError, subprocess.SubprocessError):
@@ -1077,8 +1088,8 @@ def _wifi_hacer(que, red):
     _red_cache["t"] = 0
 
 
-def wifi_accion(que, red=None):
-    if DEMO or que not in ("buscar", "conectar", "desconectar", "otra"):
+def wifi_accion(que, red=None, clave=None):
+    if DEMO or que not in ("buscar", "conectar", "nueva", "olvidar", "desconectar", "otra"):
         return False
     if que == "otra":
         # Redes nuevas piden contraseña: se hace en la ventana de wifi
@@ -1088,11 +1099,23 @@ def wifi_accion(que, red=None):
     if que == "conectar" and (not isinstance(red, str) or red not in _wifi["conocidas"]
                               or red not in [r["nombre"] for r in _wifi["redes"]]):
         return False
+    if que == "olvidar" and (not isinstance(red, str) or red not in _wifi["conocidas"]):
+        return False
+    if que == "nueva":
+        cerca = {r["nombre"]: r["seguridad"] for r in _wifi["redes"]}
+        if not isinstance(red, str) or red not in cerca or cerca[red] not in ("psk", "open"):
+            return False
+        clave = clave if isinstance(clave, str) else ""
+        # WPA: de 8 a 63 letras (o 64 hexadecimales)
+        if cerca[red] == "psk" and not (8 <= len(clave) <= 63 or re.fullmatch(r"[0-9a-fA-F]{64}", clave)):
+            return False
+        if cerca[red] == "open":
+            clave = ""
     with _wifi_candado:
         if _wifi["trabajo"]:
             return False
         _wifi.update(trabajo=que, error=None)
-    threading.Thread(target=_wifi_hacer, args=(que, red), daemon=True).start()
+    threading.Thread(target=_wifi_hacer, args=(que, red, clave if que == "nueva" else ""), daemon=True).start()
     return True
 
 
@@ -1455,6 +1478,11 @@ class Manejador(BaseHTTPRequestHandler):
             with open(os.path.join(CARPETA, "index.html"), "rb") as f:
                 html = f.read().replace(b"__G5_TOKEN__", TOKEN.encode())
             return self._responder(200, html, "text/html; charset=utf-8")
+        if self.path == "/wifi":
+            # Ventana de wifi (Super+Shift+W o tocar el wifi en la barra)
+            with open(os.path.join(os.path.dirname(CARPETA), "wifi", "index.html"), "rb") as f:
+                html = f.read().replace(b"__G5_TOKEN__", TOKEN.encode())
+            return self._responder(200, html, "text/html; charset=utf-8")
         if self.path.split("?")[0] in ("/fondo.jpg", "/bloqueo.jpg"):
             try:
                 with open(os.path.join(os.path.dirname(CARPETA), self.path.split("?")[0][1:]), "rb") as f:
@@ -1478,6 +1506,8 @@ class Manejador(BaseHTTPRequestHandler):
         if self.path.startswith("/api/") and not self._token_ok():
             # Clave vieja (el servidor se reinició): la página se recarga sola.
             return self._responder(403, {"error": "no autorizado"})
+        if self.path == "/api/wifi" and self._token_ok():
+            return self._responder(200, dict(wifi_info(), actual=red(), ip=wifi_ip(), modo=estado_leer().get("modo", "dia")))
         if self.path == "/api/datos" and self._token_ok():
             return self._responder(200, datos())
         if self.path == "/api/estado" and self._token_ok():
@@ -1596,6 +1626,9 @@ class Manejador(BaseHTTPRequestHandler):
         if self.path == "/api/web/copiar":
             ok = web_copiar(cuerpo.get("id"), cuerpo.get("nombre"))
             return self._responder(200 if ok else 404, {"ok": ok})
+        if self.path == "/api/wifi":
+            ok = wifi_accion(cuerpo.get("que"), cuerpo.get("red"), cuerpo.get("clave"))
+            return self._responder(200 if ok else 409, {"ok": ok})
         if self.path == "/api/hoja":
             ok = hoja_accion(cuerpo.get("k"), cuerpo)
             return self._responder(200 if ok else 409, {"ok": ok})
