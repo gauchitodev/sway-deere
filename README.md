@@ -76,6 +76,9 @@ Pantalla de login (opcional) para compus con dos usuarios: cada uno de un lado d
   visor verde azulado, operaciones en amarillo, coma decimal y punto de miles como en Uruguay, las últimas
   cuentas arriba y anda con el teclado numérico. Sigue el modo día o noche de la pantalla de inicio.
   El teclado numérico arranca con Bloq Num prendido.
+- **Modo tapa cerrada** (iconito de laptop en la barra o Super+Shift+T): al cerrar la tapa se bloquea y se
+  apaga la pantalla, pero la compu sigue andando. Es momentáneo (un bloqueo `handle-lid-switch` de systemd,
+  sin tocar la config del sistema): se apaga con el mismo botón o al reiniciar.
 - **Ventana de wifi G5** (Super+Shift+W o tocar el wifi en la barra): redes cerca con su señal, conectarse
   a una red nueva escribiendo la contraseña, conectarse a las guardadas, desconectar y olvidar. Usa iwd
   por D-Bus (la contraseña no aparece en la lista de procesos) y sigue el modo día o noche.
@@ -126,6 +129,7 @@ Se puede correr las veces que quieras.
 | Adelantar un tema | arrastrar la barra del panel de música |
 | Menú de apps | botón verde **Menú** (se cierra con la X amarilla o Esc) |
 | Calculadora | tecla de calculadora (otra vez la cierra); Ctrl+C copia el resultado |
+| Cerrar la tapa sin que se suspenda | iconito de laptop en la barra o Super+Shift+T (se pone amarillo; otra vez vuelve a lo normal) |
 | Conectarse a un wifi | Super+Shift+W o tocar el wifi en la barra (otra vez la cierra); Esc también |
 
 ## Pantalla de login (opcional)

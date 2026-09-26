@@ -70,6 +70,11 @@
     background: #5ea23a;
 }
 
+/* Modo tapa cerrada: apagado es un iconito tenue; prendido va en amarillo, como lo seleccionado en la G5 */
+#custom-tapa { padding: 0 10px; }
+#custom-tapa.off { opacity: .55; }
+#custom-tapa.on { background: #ffde00; color: #1b211c; font-weight: bold; }
+
 /* La carga del internet va pegada al wifi, como un solo bloque */
 #image.carga-red {
     padding: 0 10px 0 2px;

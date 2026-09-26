@@ -21,6 +21,7 @@
         "cpu",
         "temperature",
         "custom/keyboard-layout",
+        "custom/tapa",
         "battery",
         "tray",
         "clock#date",
@@ -73,6 +74,16 @@
     },
 
     // Botón verde que abre la pantalla de inicio (igual que Super+G)
+    // Modo tapa cerrada: al cerrar la tapa se bloquea y apaga la pantalla, sin suspender.
+    // Momentáneo: se apaga tocándolo de nuevo, o solo al reiniciar. Super+Shift+T también.
+    "custom/tapa": {
+        "exec": "~/.config/g5/tapa/tapa.sh estado",
+        "return-type": "json",
+        "interval": 60,
+        "signal": 10,
+        "on-click": "~/.config/g5/tapa/tapa.sh"
+    },
+
     "custom/inicio": {
         "format": "  Inicio ",
         "on-click": "~/.config/g5/home/inicio.sh",
