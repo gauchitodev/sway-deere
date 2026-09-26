@@ -973,7 +973,7 @@
     empacar(lista);
     $("modules").innerHTML = `<div class="lienzo" id="lienzo">${lista.length ? lista.map((p, i) => {
       const m = MODS[p.k];
-      return `<div class="mod ${p.t}${HOJAS[p.k] ? " con-hoja" : ""}" data-i="${i}" data-k="${p.k}">
+      return `<div class="mod ${p.t}${HOJAS[p.k] || p.k === "wifi" ? " con-hoja" : ""}" data-i="${i}" data-k="${p.k}">
         <h3>${p.t === "s" ? m.name : (m.title || m.name)}</h3>
         <div class="edit-ctl"><button type="button" class="rm" data-rm aria-label="Quitar ${m.name}">✕</button></div>
         <div class="body">${m.html}</div>
@@ -1686,8 +1686,6 @@
     return `<h4>${MESES[mo]} ${y}</h4><div class="cal">${h}</div>`;
   }
   const quedan = (fin) => mmss(Math.max(0, fin - Date.now() / 1000));
-  const WIFI_HACIENDO = { buscar: "Buscando redes…", conectar: "Conectando…", desconectar: "Desconectando…" };
-  const WIFI_FALLO = { buscar: "No se pudo buscar", conectar: "No se pudo conectar", desconectar: "No se pudo desconectar" };
   const volFijo = () => `<div class="hoja-rango"><button type="button" class="chip" data-mute="1" aria-label="Silenciar">${svgIco("vol")}</button>
       <input type="range" id="hVol" min="0" max="100" step="1" aria-label="Volumen"><b id="hVolTxt">—</b></div>`;
   function volDespues(d) {
@@ -1734,20 +1732,6 @@
           `<span class="etq ${s.c >= 85 ? "crit" : s.c >= 70 ? "warn" : "ok"}">${s.c} °C</span>`)).join("")}</div>`}
         <div class="hoja-botones">${monitor}</div>`,
       despues: () => dibujarLinea("hTempLine", "hTempFill", temps, 30, 90) },
-
-    wifi: { tit: "Wifi", extra: true, vivo: (d, x) => {
-      const r = d.red, u = d.uso_red || {}, w = x.wifi, tr = w && w.trabajo;
-      return `<div class="hoja-grande"><b style="font-size:34px">${esc(r.ssid || "Sin conexión")}</b><span>${r.dbm != null ? r.dbm + " dBm" : ""}</span></div>
-        <div class="det">${fil("Ahora", `↓ ${(u.bajada || 0).toFixed(1)} Mbps · ↑ ${(u.subida || 0).toFixed(1)} Mbps`)}</div>
-        ${w && (tr || w.error) ? `<div class="sub">${tr ? WIFI_HACIENDO[tr] : WIFI_FALLO[w.error] || "No se pudo"}</div>` : ""}
-        <h4>Redes cerca</h4>${!w ? cargando : !w.redes.length ? '<div class="sub">No veo redes. Tocá Buscar.</div>' : `<div class="hoja-lista">${w.redes.map(n => `<div class="fila">
-          <span>${esc(n.nombre)}<em>${n.dbm} dBm${n.seguridad === "open" ? " · abierta" : ""}</em></span><span class="acc">${
-          n.conectada ? boton(`data-h="desconectar"${tr ? " disabled" : ""}`, "Desconectar", "on")
-          : n.conocida ? boton(`data-h="conectar" data-red="${esc(n.nombre)}"${tr ? " disabled" : ""}`, "Conectar")
-          : boton('data-h="otra"', "Nueva…")}</span></div>`).join("")}</div>`}
-        <div class="hoja-botones">${boton(`data-h="buscar"${tr ? " disabled" : ""}`, tr === "buscar" ? "Buscando…" : "Buscar redes", "prin")}${boton('data-h="otra"', "Conectar a una red nueva")}</div>
-        <div class="hoja-aviso">Las redes nuevas piden contraseña: se abre la ventana de wifi (también con Super+Shift+W o tocando el wifi en la barra).</div>`;
-    } },
 
     net: { tit: "Datos usados", extra: true, cada: 15000, vivo: (d, x) => {
       const u = d.uso_red || {}, mes = x.mes || [];
@@ -2033,6 +2017,8 @@
     if (editing || performance.now() - deslizado < 400) return;
     if (e.target.closest("button, input, textarea, a, iframe")) return;
     const m = e.target.closest(".mod");
+    // El wifi no tiene menú propio: abre directo la ventana de wifi
+    if (m && m.dataset.k === "wifi") return api("/api/hoja", { k: "wifi", que: "otra" }).catch(() => {});
     if (m && HOJAS[m.dataset.k]) abrirHoja(m.dataset.k);
   });
 

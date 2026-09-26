@@ -1092,7 +1092,7 @@ def wifi_accion(que, red=None, clave=None):
     if DEMO or que not in ("buscar", "conectar", "nueva", "olvidar", "desconectar", "otra"):
         return False
     if que == "otra":
-        # Redes nuevas piden contraseña: se hace en la ventana de wifi
+        # Abre la ventana de wifi (el panel de wifi no tiene menú propio)
         esconder_inicio()
         subprocess.Popen(["swaymsg", "exec", "--", os.path.expanduser("~/.config/g5/wifi/abrir.sh")], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return True
@@ -1271,8 +1271,6 @@ def extra(k):
         return {"procesos": procesos("mem")}
     if k == "temp":
         return {"sensores": sensores()}
-    if k == "wifi":
-        return {"wifi": wifi_info()}
     if k == "net":
         return {"mes": red_mes()}
     if k == "disk":
