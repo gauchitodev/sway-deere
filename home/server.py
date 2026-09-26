@@ -48,7 +48,7 @@ LANZADORES = {
     "bloquear":  {"cmd": "swaylock -f -c 000000", "volver": False},
     "cerrar":    {"cmd": None, "volver": True},
     # Acciones de la categoría "Sistema" del menú
-    "wifi":          {"cmd": "foot -e iwctl", "volver": True},
+    "wifi":          {"cmd": os.path.expanduser("~/.config/g5/wifi/abrir.sh"), "volver": True},
     "brillo_mas":    {"cmd": "brightnessctl s 10%+", "volver": False},
     "brillo_menos":  {"cmd": "brightnessctl s 10%-", "volver": False},
     "recargar":      {"cmd": "swaymsg reload", "volver": False},
@@ -1081,9 +1081,9 @@ def wifi_accion(que, red=None):
     if DEMO or que not in ("buscar", "conectar", "desconectar", "otra"):
         return False
     if que == "otra":
-        # Redes nuevas piden contraseña: se hace en iwctl, con la ayuda a mano
+        # Redes nuevas piden contraseña: se hace en la ventana de wifi
         esconder_inicio()
-        subprocess.Popen(["swaymsg", "exec", "--", "foot -T Wifi -e iwctl"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.Popen(["swaymsg", "exec", "--", os.path.expanduser("~/.config/g5/wifi/abrir.sh")], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return True
     if que == "conectar" and (not isinstance(red, str) or red not in _wifi["conocidas"]
                               or red not in [r["nombre"] for r in _wifi["redes"]]):

@@ -33,7 +33,8 @@
         "format-wifi": "  {essid} {signalStrength}%",
         "format-ethernet": "  {ifname}",
         "format-disconnected": "⚠  Sin wifi",
-        "tooltip-format": "{ifname}: {ipaddr}/{cidr}"
+        "tooltip-format": "{ifname}: {ipaddr}/{cidr}\nTocá para elegir red",
+        "on-click": "~/.config/g5/wifi/abrir.sh"
     },
 
     // Carga del internet: rampa al lado del wifi, como la carga del motor de la cosechadora
