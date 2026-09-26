@@ -583,6 +583,14 @@ def _puerto_abierto(ip):
         return None
 
 
+def _es_tailscale(destino):
+    """Las direcciones de Tailscale (100.64.0.0/10) no cambian: si el bot está en una, no se busca en el wifi."""
+    try:
+        return ipaddress.ip_address(destino.split("@")[-1]) in ipaddress.ip_network("100.64.0.0/10")
+    except ValueError:
+        return False
+
+
 def _buscar_bot():
     """Busca el celular en la red: primero quién tiene el puerto abierto, después prueba SSH con la
     huella guardada. Solo devuelve una IP si la huella coincide (si no, ssh corta antes de entrar)."""
@@ -648,7 +656,8 @@ def _vigilar_amfbot():
             _amfbot["trabajo"] = None
         # Sin conexión: lo busca en la red solo (como mucho cada 2 min) o cuando se lo pedís
         pedido = _amfbot_buscar.is_set()
-        if _amfbot.get("alias") and (pedido or (estado == "sin_conexion" and time.time() - ultima_busqueda > 120)):
+        if _amfbot.get("alias") and (pedido or (estado == "sin_conexion" and not _es_tailscale(BOT["destino"])
+                                                and time.time() - ultima_busqueda > 120)):
             _amfbot_buscar.clear()
             ultima_busqueda = time.time()
             _amfbot.update(trabajo="buscar", error=None)
