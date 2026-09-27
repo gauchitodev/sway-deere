@@ -81,7 +81,8 @@ Pantalla de login (opcional) para compus con dos usuarios: cada uno de un lado d
   sin tocar la config del sistema): se apaga con el mismo botón o al reiniciar.
 - **Ventana de wifi G5** (Super+Shift+W o tocar el wifi en la barra): redes cerca con su señal, conectarse
   a una red nueva escribiendo la contraseña, conectarse a las guardadas, desconectar y olvidar. Usa iwd
-  por D-Bus (la contraseña no aparece en la lista de procesos) y sigue el modo día o noche.
+  o NetworkManager (lo detecta solo) por D-Bus (la contraseña no aparece en la lista de procesos) y sigue
+  el modo día o noche.
 - Fondo de pantalla y pantalla de bloqueo con fotos propias de una S770 en cosecha.
 - **Pantalla de login** opcional (tema para LightDM): dos usuarios a los lados de una diagonal, cada uno con
   su foto y su color. Se elige con el dedo, el mouse o `Super+flechas`, y la clave usa el mismo aro que el

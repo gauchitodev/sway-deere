@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Se conecta a una red wifi nueva por iwd (D-Bus), como hace iwctl.
 
-Uso:  echo -n "contraseña" | conectar.py "Nombre de la red"
+Uso:  echo -n "contraseña" | conectar.py "Nombre de la red" [placa]
 
 La contraseña entra por la entrada estándar y no como argumento, así no queda
 a la vista de otros usuarios en la lista de procesos (ps). Para redes abiertas
@@ -23,17 +23,18 @@ XML = """<node><interface name="net.connman.iwd.Agent">
 
 
 def main():
-    if len(sys.argv) != 2:
+    if len(sys.argv) not in (2, 3):
         print(__doc__.strip(), file=sys.stderr)
         return 2
     nombre = sys.argv[1]
+    nombre_placa = sys.argv[2] if len(sys.argv) == 3 else "wlan0"
     clave = sys.stdin.read() if not sys.stdin.isatty() else ""
 
     bus = Gio.bus_get_sync(Gio.BusType.SYSTEM)
     objetos = bus.call_sync(IWD, "/", "org.freedesktop.DBus.ObjectManager", "GetManagedObjects",
                             None, GLib.VariantType("(a{oa{sa{sv}}})"), 0, 5000, None).unpack()[0]
     placa = next((ruta for ruta, ifs in objetos.items()
-                  if ifs.get(IWD + ".Device", {}).get("Name") == "wlan0"), None)
+                  if ifs.get(IWD + ".Device", {}).get("Name") == nombre_placa), None)
     red = next((ruta for ruta, ifs in objetos.items()
                 if ifs.get(IWD + ".Network", {}).get("Name") == nombre
                 and ifs[IWD + ".Network"].get("Device") == placa), None)

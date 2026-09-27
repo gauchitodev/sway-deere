@@ -234,6 +234,25 @@ def temperatura():
 
 
 _red_cache = {"t": 0, "ssid": None}
+_wifi_quien = {"t": 0, "nm": False, "placa": "wlan0"}
+WIFI_NM = os.path.join(os.path.dirname(CARPETA), "wifi", "nm.py")
+
+
+def _wifi_detectar():
+    """Quién maneja el wifi (NetworkManager o iwd solo) y cómo se llama la placa (wlan0, wlp2s0...)."""
+    if time.time() - _wifi_quien["t"] > 60:
+        nm = correr(["systemctl", "is-active", "NetworkManager"]).strip() == "active"
+        placas = sorted(os.path.basename(os.path.dirname(d)) for d in glob.glob("/sys/class/net/*/wireless"))
+        _wifi_quien.update(t=time.time(), nm=nm, placa=placas[0] if placas else "wlan0")
+    return _wifi_quien
+
+
+def placa_wifi():
+    return _wifi_detectar()["placa"]
+
+
+def usa_nm():
+    return _wifi_detectar()["nm"]
 RED_ARCHIVO = os.environ.get("G5_RED") or os.path.join(CARPETA, "red.json")
 _red_uso = {"bajada": 0, "subida": 0, "dias": {}}
 
@@ -251,11 +270,11 @@ def _contar_red():
     hoy = date.today().isoformat()
     arranque = time.time() - float(leer("/proc/uptime", "0").split()[0])
     if hoy not in _red_uso["dias"] and date.fromtimestamp(arranque).isoformat() == hoy:
-        _red_uso["dias"][hoy] = (leer_int("/sys/class/net/wlan0/statistics/rx_bytes", 0)
-                                 + leer_int("/sys/class/net/wlan0/statistics/tx_bytes", 0))
+        _red_uso["dias"][hoy] = (leer_int(f"/sys/class/net/{placa_wifi()}/statistics/rx_bytes", 0)
+                                 + leer_int(f"/sys/class/net/{placa_wifi()}/statistics/tx_bytes", 0))
     while True:
-        rx = leer_int("/sys/class/net/wlan0/statistics/rx_bytes", 0)
-        tx = leer_int("/sys/class/net/wlan0/statistics/tx_bytes", 0)
+        rx = leer_int(f"/sys/class/net/{placa_wifi()}/statistics/rx_bytes", 0)
+        tx = leer_int(f"/sys/class/net/{placa_wifi()}/statistics/tx_bytes", 0)
         ahora = time.time()
         if antes:
             drx = rx - antes[0] if rx >= antes[0] else rx   # si se reinició el contador
@@ -298,11 +317,15 @@ def red():
                 pass
             break
     if time.time() - _red_cache["t"] > 30:
-        salida = re.sub(r"\x1b\[[0-9;]*m", "", correr(["iwctl", "station", "wlan0", "show"]))
-        m = re.search(r"Connected network\s+(.+)", salida)
-        _red_cache.update(t=time.time(), ssid=m.group(1).strip() if m else None)
-    rx = leer_int("/sys/class/net/wlan0/statistics/rx_bytes", 0)
-    tx = leer_int("/sys/class/net/wlan0/statistics/tx_bytes", 0)
+        if usa_nm():
+            ssid = correr(["python3", WIFI_NM, "estado"], timeout=4).strip() or None
+        else:
+            salida = re.sub(r"\x1b\[[0-9;]*m", "", correr(["iwctl", "station", placa_wifi(), "show"]))
+            m = re.search(r"Connected network\s+(.+)", salida)
+            ssid = m.group(1).strip() if m else None
+        _red_cache.update(t=time.time(), ssid=ssid)
+    rx = leer_int(f"/sys/class/net/{placa_wifi()}/statistics/rx_bytes", 0)
+    tx = leer_int(f"/sys/class/net/{placa_wifi()}/statistics/tx_bytes", 0)
     return {"dbm": dbm, "ssid": "MiWifi" if DEMO else _red_cache["ssid"], "mb": round((rx + tx) / 1048576)}
 
 
@@ -1037,14 +1060,21 @@ def sensores():
     return lista[:12]
 
 
-# Wifi (iwd): redes cerca y conectarse a las que ya conocés
+# Wifi (iwd o NetworkManager): redes cerca y conectarse a las que ya conocés
 _wifi = {"t": 0, "redes": [], "conocidas": [], "trabajo": None, "error": None}
 _wifi_candado = threading.Lock()
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 
 def _wifi_leer():
-    salida = ANSI.sub("", correr(["iwctl", "station", "wlan0", "get-networks", "rssi-dbms"], timeout=4))
+    if usa_nm():
+        try:
+            datos = json.loads(correr(["python3", WIFI_NM, "listar"], timeout=6) or "{}")
+        except ValueError:
+            datos = {}
+        _wifi.update(t=time.time(), redes=datos.get("redes", [])[:12], conocidas=datos.get("conocidas", []))
+        return
+    salida = ANSI.sub("", correr(["iwctl", "station", placa_wifi(), "get-networks", "rssi-dbms"], timeout=4))
     redes = []
     for linea in salida.splitlines():
         m = re.match(r"^\s*(>)?\s+(.+?)\s{2,}(psk|open|8021x|wep|owe)\s+(-?\d+)\s*$", linea)
@@ -1060,7 +1090,7 @@ def _wifi_leer():
 
 
 def wifi_ip():
-    m = re.search(r"inet (\S+)", correr(["ip", "-4", "-o", "addr", "show", "wlan0"], timeout=3))
+    m = re.search(r"inet (\S+)", correr(["ip", "-4", "-o", "addr", "show", placa_wifi()], timeout=3))
     return m.group(1) if m else None
 
 
@@ -1079,12 +1109,16 @@ WIFI_CONECTAR = os.path.join(os.path.dirname(CARPETA), "wifi", "conectar.py")
 
 
 def _wifi_hacer(que, red, clave=""):
-    cmd = {"buscar": ["iwctl", "station", "wlan0", "scan"],
-           "conectar": ["iwctl", "station", "wlan0", "connect", red or ""],
-           # Red nueva: la contraseña va por stdin, así no se ve en la lista de procesos
-           "nueva": ["python3", WIFI_CONECTAR, red or ""],
-           "olvidar": ["iwctl", "known-networks", red or "", "forget"],
-           "desconectar": ["iwctl", "station", "wlan0", "disconnect"]}[que]
+    placa = placa_wifi()
+    if usa_nm():
+        # Red nueva: la contraseña va por stdin, así no se ve en la lista de procesos
+        cmd = ["python3", WIFI_NM, que] + ([red or ""] if que in ("conectar", "nueva", "olvidar") else [])
+    else:
+        cmd = {"buscar": ["iwctl", "station", placa, "scan"],
+               "conectar": ["iwctl", "station", placa, "connect", red or ""],
+               "nueva": ["python3", WIFI_CONECTAR, red or "", placa],
+               "olvidar": ["iwctl", "known-networks", red or "", "forget"],
+               "desconectar": ["iwctl", "station", placa, "disconnect"]}[que]
     try:
         r = subprocess.run(cmd, input=clave, capture_output=True, text=True, timeout=60)
         if r.returncode != 0:
@@ -1092,7 +1126,7 @@ def _wifi_hacer(que, red, clave=""):
     except (OSError, subprocess.SubprocessError):
         _wifi["error"] = que
     if que == "buscar":
-        time.sleep(4)   # el escaneo sigue un rato después de que iwctl contesta
+        time.sleep(4)   # el escaneo sigue un rato después de que contesta
     _wifi.update(t=0, trabajo=None)
     _red_cache["t"] = 0
 
