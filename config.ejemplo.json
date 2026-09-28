@@ -39,5 +39,8 @@
     "org": "123456",
     "app_opc": "operations-center.desktop",
     "app_files": "deere-files.desktop"
+  },
+  "clima_ejemplo": {
+    "url": "http://127.0.0.1:8741"
   }
 }

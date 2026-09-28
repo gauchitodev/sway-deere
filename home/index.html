@@ -474,8 +474,8 @@
   .hoja-ip .chip { min-height: 44px; }
   .hoja-aviso { font-size: 14px; color: var(--muted); line-height: 1.45; }
   .hoja-aviso code { font-size: 14px; color: var(--ink); background: var(--track); padding: 1px 5px; border-radius: 3px; }
-  .mod[data-k="bt"], .mod[data-k="amfbot"] { cursor: pointer; }
-  .editing .mod[data-k="bt"], .editing .mod[data-k="amfbot"] { cursor: grab; }
+  .mod[data-k="bt"], .mod[data-k="amfbot"], .mod[data-k="clima"] { cursor: pointer; }
+  .editing .mod[data-k="bt"], .editing .mod[data-k="amfbot"], .editing .mod[data-k="clima"] { cursor: grab; }
   .mod.choca { outline-color: var(--crit) !important; }
   /* Todos los paneles con menú se abren al tocarlos */
   .mod.con-hoja { cursor: pointer; }
@@ -698,6 +698,8 @@
              <div class="det bt-lista" id="btLista"></div>
              <div class="bt-pie"><button type="button" class="chip" data-bt="buscar" id="btBuscar">Buscar nuevos</button></div>` },
     amfbot: { name: "Bot", html: `<div class="bot"><span class="bot-luz" id="botLuz"></span><span class="bot-txt" id="botTxt">Revisando…</span></div><div class="sub" id="botSub">—</div>` },
+    clima:  { name: "Clima", html: `<div class="big"><span id="climaMax">—</span><small id="climaMin"></small></div><div class="sub" id="climaSub">Revisando…</div>
+             <div class="det" id="climaDias"></div>` },
     reloj:  { name: "Reloj", html: `<div class="reloj"><span id="relojHora">--:--</span><small id="relojSeg">00</small></div><div class="sub fecha" id="relojFecha">—</div>` },
     musica: { name: "Música", title: "Sonando ahora", html: `<div class="mus-fondo" id="musFondo"></div>
              <div class="mus">
@@ -973,7 +975,7 @@
     empacar(lista);
     $("modules").innerHTML = `<div class="lienzo" id="lienzo">${lista.length ? lista.map((p, i) => {
       const m = MODS[p.k];
-      return `<div class="mod ${p.t}${HOJAS[p.k] || p.k === "wifi" ? " con-hoja" : ""}" data-i="${i}" data-k="${p.k}">
+      return `<div class="mod ${p.t}${HOJAS[p.k] || p.k === "wifi" || p.k === "clima" ? " con-hoja" : ""}" data-i="${i}" data-k="${p.k}">
         <h3>${p.t === "s" ? m.name : (m.title || m.name)}</h3>
         <div class="edit-ctl"><button type="button" class="rm" data-rm aria-label="Quitar ${m.name}">✕</button></div>
         <div class="body">${m.html}</div>
@@ -2019,6 +2021,8 @@
     const m = e.target.closest(".mod");
     // El wifi no tiene menú propio: abre directo la ventana de wifi
     if (m && m.dataset.k === "wifi") return api("/api/hoja", { k: "wifi", que: "otra" }).catch(() => {});
+    // El clima abre directo PromClim (si no está corriendo, arranca solo)
+    if (m && m.dataset.k === "clima") return api("/api/lanzar", { que: "app:promclim.desktop" }).catch(() => {});
     if (m && HOJAS[m.dataset.k]) abrirHoja(m.dataset.k);
   });
 
@@ -2131,6 +2135,30 @@
       luz.className = "bot-luz " + botLuz(bot);
       set("botTxt", botTxt(bot));
       set("botSub", botResumen(bot));
+    }
+
+    // Clima (PromClim)
+    const cl = d.clima || {};
+    if ($("climaMax")) {
+      const g = (v) => v == null ? "—" : Math.round(v) + "°";
+      const mm = (v) => v == null ? "" : v > 0 && v < 1 ? v + " mm" : Math.round(v) + " mm";
+      const hoy = (cl.dias || [])[0];
+      if (cl.estado === "ok" && hoy) {
+        set("climaMax", g(hoy.max));
+        set("climaMin", " / " + g(hoy.min));
+        const agua = (hoy.lluvia || 0) >= 0.5 ? `${mm(hoy.lluvia)}${hoy.prob != null ? " · " + Math.round(hoy.prob) + " %" : ""}` : "sin lluvia";
+        set("climaSub", `${cl.lugar} · ${agua}`);
+        const nombres = ["Hoy", "Mañana", "Pasado"];
+        $("climaDias").innerHTML = cl.dias.map((x, i) => `<div class="fila"><span>${nombres[i]}</span><b>${esc(g(x.max))} / ${esc(g(x.min))}${
+          (x.lluvia || 0) >= 0.5 ? " · " + esc(mm(x.lluvia)) : ""}</b></div>`).join("")
+          + (cl.acumulado7 != null ? `<div class="fila"><span>Lluvia en 7 días</span><b>${esc(mm(cl.acumulado7) || "0 mm")}</b></div>` : "")
+          + `<div class="fila"><span>Promedio de</span><b>${esc(cl.fuentes_ok ?? "—")} fuentes · ${esc(cl.revisado || "")}</b></div>`;
+      } else {
+        set("climaMax", "—");
+        set("climaMin", "");
+        set("climaSub", { sin_lugar: "Tocá para elegir un lugar", sin_promclim: "PromClim no responde", revisando: "Revisando…" }[cl.estado] || "—");
+        $("climaDias").innerHTML = "";
+      }
     }
 
     // Bluetooth

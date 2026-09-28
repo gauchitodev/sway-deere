@@ -73,6 +73,11 @@ BOT = CONFIG.get("bot") or {}
 if DEMO:
     BOT = {"nombre": "Mi bot", "dispositivo": "el celular"}
 
+# Panel "Clima": resumen de PromClim (https://github.com/gauchitodev/PromClim),
+# que corre en esta misma compu. Solo se acepta una dirección local.
+_clima_url = str((CONFIG.get("clima") or {}).get("url") or "http://127.0.0.1:8741").rstrip("/")
+CLIMA_URL = _clima_url if re.fullmatch(r"http://(127\.0\.0\.1|localhost):\d{1,5}", _clima_url) else "http://127.0.0.1:8741"
+
 # Nombres más claros para algunas apps
 NOMBRES = {
     "foot.desktop": "Terminal",
@@ -694,6 +699,69 @@ def _vigilar_amfbot():
         _amfbot_ya.wait(30)
 
 
+# ---------- Clima (PromClim) ----------
+
+# Se reemplaza entero cada vez (no se edita), así la página nunca lo ve a medio armar.
+_clima = {"v": {"estado": "revisando"}}
+
+
+def _clima_num(v):
+    return round(float(v), 1) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+
+def _clima_leer():
+    """Pide el resumen a PromClim y se queda solo con campos conocidos y del tipo esperado."""
+    req = urllib.request.Request(CLIMA_URL + "/api/resumen", headers={"Accept": "application/json"})
+    # Primer pedido del día: PromClim consulta todas las fuentes, puede tardar.
+    with urllib.request.urlopen(req, timeout=60) as r:
+        crudo = json.loads(r.read(200000).decode("utf-8", "replace"))
+    if not isinstance(crudo, dict):
+        raise ValueError("respuesta rara")
+    if crudo.get("sinLugar"):
+        return {"estado": "sin_lugar"}
+    lugar = crudo.get("lugar") if isinstance(crudo.get("lugar"), dict) else {}
+    fuentes = crudo.get("fuentes") if isinstance(crudo.get("fuentes"), dict) else {}
+    dias = []
+    for d in (crudo.get("dias") or [])[:3]:
+        if not isinstance(d, dict) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(d.get("fecha", ""))):
+            continue
+        ll = d.get("llueve") if isinstance(d.get("llueve"), dict) else {}
+        dias.append({
+            "fecha": d["fecha"],
+            "max": _clima_num(d.get("max")), "min": _clima_num(d.get("min")),
+            "lluvia": _clima_num(d.get("lluvia")), "prob": _clima_num(d.get("prob")),
+            "llueve_si": ll.get("si") if isinstance(ll.get("si"), int) else None,
+            "llueve_de": ll.get("de") if isinstance(ll.get("de"), int) else None,
+        })
+    return {
+        "estado": "ok",
+        "lugar": str(lugar.get("nombre") or "")[:60],
+        "fuentes_ok": fuentes.get("ok") if isinstance(fuentes.get("ok"), int) else None,
+        "acumulado7": _clima_num(crudo.get("acumulado7")),
+        "dias": dias,
+    }
+
+
+def _vigilar_clima():
+    """Cada 30 min pregunta a PromClim (en un hilo aparte). Si PromClim no está
+    corriendo, systemd lo prende solo con este pedido (promclim.socket)."""
+    if DEMO:
+        _clima["v"] = dict(estado="ok", lugar="Trinidad", fuentes_ok=7, acumulado7=21.0, dias=[
+            {"fecha": "2026-09-28", "max": 19, "min": 14, "lluvia": 3, "prob": 70, "llueve_si": 4, "llueve_de": 4},
+            {"fecha": "2026-09-29", "max": 19, "min": 13, "lluvia": 8, "prob": 84, "llueve_si": 4, "llueve_de": 5},
+            {"fecha": "2026-09-30", "max": 17, "min": 8, "lluvia": 0, "prob": 9, "llueve_si": 0, "llueve_de": 5}])
+        return
+    while True:
+        try:
+            nuevo = _clima_leer()
+        except (OSError, ValueError):
+            # Sin PromClim instalado, o no contestó: se muestra en el panel.
+            nuevo = {"estado": "sin_promclim"}
+        nuevo["revisado"] = time.strftime("%H:%M")
+        _clima["v"] = nuevo
+        time.sleep(1800 if nuevo["estado"] == "ok" else 300)
+
+
 def _bot_arrancar():
     try:
         r = _bot_ssh(BOT["arrancar"], timeout=30)
@@ -786,6 +854,7 @@ def datos():
         "volumen": volumen(),
         "sway": ventanas(),
         "amfbot": _bot_info(),
+        "clima": _clima["v"],
         "temporizador": {"fin": _timer["fin"], "min": _timer["min"]} if _timer["fin"] else None,
         "bluetooth": bluetooth(),
         "encendida_min": round(float(leer("/proc/uptime", "0").split()[0]) / 60),
@@ -1690,5 +1759,6 @@ class Manejador(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     threading.Thread(target=_vigilar_amfbot, daemon=True).start()
+    threading.Thread(target=_vigilar_clima, daemon=True).start()
     threading.Thread(target=_contar_red, daemon=True).start()
     ThreadingHTTPServer(("127.0.0.1", PUERTO), Manejador).serve_forever()

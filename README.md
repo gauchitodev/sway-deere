@@ -68,6 +68,9 @@ Pantalla de login (opcional) para compus con dos usuarios: cada uno de un lado d
   - **Mini Operations Center y mini Files** (opcional, con tu propia app de la API de John Deere): cuántas
     máquinas reportaron hoy, horas de motor, última posición, alertas de la semana y "cómo llegar"; y los
     últimos archivos de la organización. Solo lectura.
+  - **Clima** (opcional, con [PromClim](https://github.com/gauchitodev/PromClim) en la misma compu): máxima,
+    mínima y lluvia de hoy promediadas entre varias fuentes, y los próximos días si lo agrandás. Tocarlo
+    abre PromClim. Si PromClim no está instalado, el panel lo dice y no molesta.
   - **Paneles web** que armás vos: el logo de una app web y botones que abren secciones fijas de ese sitio,
     más (si querés) la lista de los últimos archivos descargados que coinciden con un nombre.
   - **Menú de apps** estilo G5 (las apps web muestran su propio logo): Favoritas, Todas las apps y Sistema (apagar y reiniciar piden dos toques).
