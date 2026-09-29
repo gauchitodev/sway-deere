@@ -138,7 +138,7 @@ Se puede correr las veces que quieras.
 | Menú de apps | botón verde **Menú** (se cierra con la X amarilla o Esc) |
 | Calculadora | tecla de calculadora (otra vez la cierra); Ctrl+C copia el resultado |
 | Cerrar la tapa sin que se suspenda | iconito de laptop en la barra o Super+Shift+T (se pone amarillo; otra vez vuelve a lo normal) |
-| Explorador de archivos (Thunar) | Super+Shift+E |
+| Explorador de archivos (Thunar) | Super+Shift+A |
 | Conectarse a un wifi | Super+Shift+W o tocar el wifi en la barra (otra vez la cierra); Esc también |
 
 ## Pantalla de login (opcional)
