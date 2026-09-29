@@ -2197,7 +2197,8 @@
     // Estado general
     const pill = $("pill");
     let txt = "Todo en orden", cls = "";
-    if (bot.estado === "detenido") { txt = "AMF-Bot detenido"; cls = "crit"; }
+    const parado = (d.bots || []).find(x => x.estado === "detenido");
+    if (parado) { txt = (parado.nombre || "Bot") + " detenido"; cls = "crit"; }
     else if (b && b.estado === "Discharging" && b.pct <= 12) { txt = "Batería muy baja"; cls = "crit"; }
     else if (d.temp >= 85) { txt = "Procesador muy caliente"; cls = "crit"; }
     else if (b && b.estado === "Discharging" && b.pct <= 25) { txt = "Batería baja"; cls = "warn"; }
