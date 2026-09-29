@@ -894,6 +894,7 @@ def datos():
         "volumen": volumen(),
         "sway": ventanas(),
         "bots": [b.info() for b in BOTS.values()],
+        "usb": usb_info(),
         "clima": _clima["v"],
         "temporizador": {"fin": _timer["fin"], "min": _timer["min"]} if _timer["fin"] else None,
         "bluetooth": bluetooth(),
@@ -943,6 +944,82 @@ def apps():
                     "icono": icono_archivo(c.get("Icon", "")),
                 }
     return encontradas
+
+
+# ---------- Pendrives: montar, abrir y expulsar sin sudo (udisksctl) ----------
+_usb = {"aviso": None, "t": 0}
+
+
+def pendrives():
+    """Los sistemas de archivos de los discos que se enchufan (pendrive, disco USB, tarjeta SD)."""
+    try:
+        devs = json.loads(correr(["lsblk", "-J", "-b", "-o", "PATH,PKNAME,TYPE,TRAN,RM,HOTPLUG,FSTYPE,LABEL,SIZE,"
+                                  "FSAVAIL,FSSIZE,MOUNTPOINT,VENDOR,MODEL"], 3) or "{}").get("blockdevices") or []
+    except ValueError:
+        return []
+    discos = {d["path"]: d for d in devs if d.get("type") == "disk" and (d.get("tran") == "usb" or d.get("rm") or d.get("hotplug"))
+              and not str(d.get("path")).startswith(("/dev/zram", "/dev/loop"))}
+    lista = []
+    for d in devs:
+        disco = discos.get(d["path"] if d.get("type") == "disk" else "/dev/" + str(d.get("pkname")))
+        if not disco or d.get("type") not in ("disk", "part") or not d.get("fstype") or d["fstype"] == "swap":
+            continue
+        marca = " ".join(str(x).strip() for x in (disco.get("vendor"), disco.get("model")) if x).strip()
+        lista.append({"dev": d["path"], "disco": disco["path"], "nombre": str(d.get("label") or marca or os.path.basename(d["path"]))[:40],
+                      "tam": d.get("fssize") or d.get("size"), "libre": d.get("fsavail"), "montado": d.get("mountpoint"),
+                      "cifrado": d["fstype"] == "crypto_LUKS"})
+    return lista
+
+
+def usb_info():
+    aviso = _usb["aviso"] if time.time() - _usb["t"] < 60 else None
+    return {"lista": pendrives(), "aviso": aviso}
+
+
+def _udisks(*args, timeout=30):
+    try:
+        r = subprocess.run(["udisksctl", *args, "--no-user-interaction"], capture_output=True, text=True, timeout=timeout)
+        return r.returncode == 0, (r.stderr or r.stdout).strip()
+    except (OSError, subprocess.SubprocessError) as e:
+        return False, str(e)
+
+
+def usb_accion(que, dev):
+    """abrir = montar si hace falta y abrir en Thunar; expulsar = desmontar todo el disco y cortarle la corriente."""
+    lista = pendrives()
+    item = next((x for x in lista if x["dev"] == dev), None)
+    if not item:
+        return {"ok": False, "error": "No lo encuentro: ¿lo sacaste?"}
+    if que == "abrir":
+        if item["cifrado"]:
+            # Thunar pide la contraseña del disco cifrado
+            esconder_inicio()
+            subprocess.Popen(["swaymsg", "exec", "--", "thunar"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return {"ok": True}
+        destino = item["montado"]
+        if not destino:
+            ok, msg = _udisks("mount", "-b", dev)
+            if not ok:
+                return {"ok": False, "error": "No se pudo abrir: " + msg[:120]}
+            destino = next((x["montado"] for x in pendrives() if x["dev"] == dev), None)
+        if not destino or not os.path.isdir(destino):
+            return {"ok": False, "error": "Se montó, pero no encuentro la carpeta"}
+        esconder_inicio()
+        subprocess.Popen(["swaymsg", "exec", "--", shlex.join(["thunar", destino])], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return {"ok": True}
+    if que == "expulsar":
+        for x in lista:
+            if x["disco"] == item["disco"] and x["montado"]:
+                # Desmontar espera a que termine de copiar lo que quedaba pendiente
+                ok, msg = _udisks("unmount", "-b", x["dev"], timeout=120)
+                if not ok:
+                    ocupado = "busy" in msg.lower() or "ocupado" in msg.lower()
+                    return {"ok": False, "error": "Hay algo abierto del pendrive: cerralo y probá de nuevo" if ocupado
+                            else "No se pudo expulsar: " + msg[:120]}
+        _udisks("power-off", "-b", item["disco"])   # algunos lectores no se dejan apagar: igual ya está desmontado
+        _usb.update(aviso=f"Ya podés sacar {item['nombre']}", t=time.time())
+        return {"ok": True}
+    return {"ok": False, "error": "acción desconocida"}
 
 
 def lanzar_app(ident):
@@ -1766,6 +1843,9 @@ class Manejador(BaseHTTPRequestHandler):
                 json.dump(e, f, indent=2)
             _yt_cache["t"] = 0
             return self._responder(200, {"ok": True})
+        if self.path == "/api/usb":
+            r = usb_accion(cuerpo.get("que"), cuerpo.get("dev"))
+            return self._responder(200 if r["ok"] else 409, r)
         if self.path == "/api/bot":
             ok = bot_accion(cuerpo.get("id"), cuerpo.get("que"), cuerpo.get("valor"))
             return self._responder(200 if ok else 409, {"ok": ok})

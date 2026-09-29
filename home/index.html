@@ -297,6 +297,7 @@
   .bt-lista .fila span { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bt-lista .fila em { font-style: normal; color: var(--muted); font-size: 13px; margin-left: 6px; }
   .bt-lista .fila .chip { min-height: 40px; flex: none; }
+  .bt-lista .fila .acc { display: flex; gap: 6px; flex: none; align-items: center; }
   .bt-lista .fila .chip.on { background: var(--green); color: #fff; border-color: var(--green-deep); }
   .bt-lista h4 { margin: 6px 0 0; font-size: 13px; color: var(--muted); font-weight: 700; }
   .mod.s .bt-lista, .mod.s .bt-pie { display: none; }
@@ -697,6 +698,9 @@
                <button type="button" class="chip" id="btPower">—</button></div><div class="sub" id="btSub">—</div>
              <div class="det bt-lista" id="btLista"></div>
              <div class="bt-pie"><button type="button" class="chip" data-bt="buscar" id="btBuscar">Buscar nuevos</button></div>` },
+    usb:    { name: "Pendrive", title: "Pendrive y discos", html: `<div class="bt-cab"><span class="bot-luz" id="usbLuz"></span><span class="bot-txt" id="usbTxt">—</span>
+               <button type="button" class="chip" data-abrir="app:thunar.desktop">Archivos</button></div><div class="sub" id="usbSub">—</div>
+             <div class="det bt-lista" id="usbLista"></div>` },
     clima:  { name: "Clima", html: `<div class="big"><span id="climaMax">—</span><small id="climaMin"></small></div><div class="sub" id="climaSub">Revisando…</div>
              <div class="det" id="climaDias"></div>` },
     reloj:  { name: "Reloj", html: `<div class="reloj"><span id="relojHora">--:--</span><small id="relojSeg">00</small></div><div class="sub fecha" id="relojFecha">—</div>` },
@@ -846,6 +850,7 @@
       return;
     }
     if (b.dataset.abrir && !editing) { api("/api/lanzar", { que: b.dataset.abrir }).catch(() => {}); return; }
+    if (b.dataset.usb && !editing) { usbAccion(b.dataset.usb, b.dataset.dev); return; }
     if (b.dataset.jd && !editing) { api("/api/deere", { que: b.dataset.jd }).catch(() => {}); return; }
     if (b.id === "ytAgregar") {
       const h = $("ytInput").value.trim(); if (!h) return;
@@ -863,6 +868,36 @@
     }
     if (b.dataset.ytrm) { api("/api/yt/quitar", { id: b.dataset.ytrm }).then(() => cargarYT(true)).catch(() => {}); }
   });
+
+  // ---------- Pendrive: abrir (monta si hace falta) y expulsar ----------
+  let usbTrabajo = null, usbError = null, usbErrorT = null;
+  const gb = (b) => b == null ? "—" : b >= 1e9 ? (b / 1e9).toFixed(b >= 1e11 ? 0 : 1) + " GB" : Math.max(1, Math.round(b / 1e6)) + " MB";
+  function usbAccion(que, dev) {
+    usbTrabajo = { que, dev }; usbError = null;
+    if (ultimo) pintar(ultimo);
+    api("/api/usb", { que, dev }).then(r => { if (!r.ok) usbError = r.error || "No se pudo"; })
+      .catch(() => { usbError = "No se pudo"; })
+      .finally(() => {
+        usbTrabajo = null; clearTimeout(usbErrorT);
+        usbErrorT = setTimeout(() => { usbError = null; if (ultimo) pintar(ultimo); }, 8000);
+        actualizar();
+      });
+  }
+  function pintarUsb(u) {
+    if (!$("usbLuz")) return;
+    const l = u.lista || [];
+    $("usbLuz").className = "bot-luz " + (usbError ? "duda" : l.length ? "ok" : "");
+    set("usbTxt", usbTrabajo ? (usbTrabajo.que === "abrir" ? "Abriendo…" : "Expulsando…")
+      : l.length ? (l.length === 1 ? l[0].nombre : l.length + " enchufados") : "Nada enchufado");
+    set("usbSub", usbError || u.aviso || (l.length === 1 && l[0].libre != null ? `${gb(l[0].libre)} libres de ${gb(l[0].tam)}`
+      : l.length ? "Tocá Abrir para ver los archivos" : "Enchufá un pendrive o una tarjeta"));
+    const ocup = usbTrabajo ? " disabled" : "";
+    const html = l.map(x => `<div class="fila"><span>${esc(x.nombre)}<em>${x.cifrado ? "cifrado" : x.libre != null ? gb(x.libre) + " libres" : gb(x.tam)}</em></span>
+      <span class="acc"><button type="button" class="chip prin" data-usb="abrir" data-dev="${esc(x.dev)}"${ocup}>Abrir</button>
+      ${x.cifrado ? "" : `<button type="button" class="chip" data-usb="expulsar" data-dev="${esc(x.dev)}"${ocup}>⏏ Expulsar</button>`}</span></div>`).join("");
+    const lista = $("usbLista");
+    if (lista.dataset.html !== html) { lista.dataset.html = html; lista.innerHTML = html; }
+  }
 
   // ---------- Música: barra de avance, adelantar y volumen ----------
   // El servidor manda la posición cada 2 s; entre medio la barra avanza sola.
@@ -2149,6 +2184,8 @@
         el.querySelector("[data-botsub]").textContent = botResumen(bot);
       });
     });
+
+    pintarUsb(d.usb || {});
 
     // Clima (PromClim)
     const cl = d.clima || {};
