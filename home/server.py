@@ -66,12 +66,35 @@ try:
         CONFIG = json.load(_f)
 except (OSError, ValueError):
     CONFIG = {}
-# Panel "Bot": un celular o servidor al que se entra por SSH con llave.
+# Paneles "Bot": cada uno es un celular o servidor al que se entra por SSH con llave.
+# Salen de local/config.json → "bots" (una lista; el "bot" suelto de antes también vale).
 # El comando remoto sale con 0 si el bot anda (y puede imprimir los segundos que lleva),
 # con 1 si está detenido. Cualquier otra cosa = sin conexión.
-BOT = CONFIG.get("bot") or {}
+BOT_ID = re.compile(r"[a-z]{1,17}")
+
+
+def _bots_leer(cfg):
+    lista = cfg.get("bots")
+    if not isinstance(lista, list):
+        viejo = cfg.get("bot")
+        # El formato de antes: un solo bot, con la huella guardada como "g5-bot"
+        lista = [dict(viejo, id=viejo.get("id") or "bot", huella=viejo.get("huella") or "g5-bot")] if isinstance(viejo, dict) else []
+    bots = []
+    for b in lista:
+        if not isinstance(b, dict) or not BOT_ID.fullmatch(str(b.get("id", ""))) or any(x["id"] == b["id"] for x in bots):
+            continue
+        if not isinstance(b.get("destino", ""), str) or not isinstance(b.get("comando", ""), str):
+            continue
+        huella = str(b.get("huella") or "g5-bot-" + b["id"])
+        if not re.fullmatch(r"[A-Za-z0-9._-]{1,40}", huella):
+            continue
+        bots.append(dict(b, huella=huella))
+    return bots
+
+
+BOTS_CFG = _bots_leer(CONFIG)
 if DEMO:
-    BOT = {"nombre": "Mi bot", "dispositivo": "el celular"}
+    BOTS_CFG = [{"id": "demo", "nombre": "Mi bot", "dispositivo": "el celular", "huella": "g5-bot-demo"}]
 
 # Panel "Clima": resumen de PromClim (https://github.com/gauchitodev/PromClim),
 # que corre en esta misma compu. Solo se acepta una dirección local.
@@ -549,42 +572,7 @@ def ventanas():
     return {"ventanas": _sway_cache["ventanas"], "escritorios": _sway_cache["escritorios"]}
 
 
-_amfbot = {"estado": "revisando" if BOT else "sin_configurar", "segundos": None, "revisado": None,
-           "nombre": BOT.get("nombre", "Bot"), "dispositivo": BOT.get("dispositivo", "el celular"),
-           "trabajo": None, "error": None}
-_amfbot_ya = threading.Event()   # "revisá ahora", sin esperar los 30 s
-_amfbot_buscar = threading.Event()   # "buscalo en la red ahora"
 HOST = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?")
-
-# Si el celular cambia de red, cambia de IP. Para encontrarlo sin riesgo de entrar a otro aparato,
-# su huella SSH se guarda en known_hosts con este nombre fijo: ssh la compara antes de mandar la llave.
-ALIAS = "g5-bot"
-
-
-def _alias_listo():
-    """True si known_hosts ya tiene la huella del bot con el nombre fijo. Si no, la copia de la
-    entrada de la IP actual (la que quedó guardada la primera vez que entraste)."""
-    if subprocess.run(["ssh-keygen", "-F", ALIAS], capture_output=True).returncode == 0:
-        return True
-    host, puerto = BOT["destino"].split("@")[-1], BOT.get("puerto", 22)
-    r = subprocess.run(["ssh-keygen", "-F", host if puerto == 22 else f"[{host}]:{puerto}"], capture_output=True, text=True)
-    lineas = [ln.split(" ", 1)[1] for ln in r.stdout.splitlines() if ln and not ln.startswith("#") and " " in ln]
-    if not lineas:
-        return False
-    with open(os.path.expanduser("~/.ssh/known_hosts"), "a") as f:
-        f.writelines(f"{ALIAS} {ln}\n" for ln in lineas)
-    return True
-
-
-def _ssh_base(destino):
-    ssh = ["ssh", "-p", str(BOT.get("puerto", 22)), "-o", "BatchMode=yes", "-o", "ConnectTimeout=6"]
-    if _amfbot.get("alias"):
-        ssh += ["-o", f"HostKeyAlias={ALIAS}", "-o", "StrictHostKeyChecking=yes"]
-    return ssh + [destino]
-
-
-def _bot_ssh(comando, timeout=20):
-    return subprocess.run(_ssh_base(BOT["destino"]) + [comando], capture_output=True, text=True, timeout=timeout)
 
 
 def _redes_locales():
@@ -603,14 +591,6 @@ def _redes_locales():
     return ips
 
 
-def _puerto_abierto(ip):
-    try:
-        with socket.create_connection((ip, BOT.get("puerto", 22)), timeout=0.6):
-            return ip
-    except OSError:
-        return None
-
-
 def _es_tailscale(destino):
     """Las direcciones de Tailscale (100.64.0.0/10) no cambian: si el bot está en una, no se busca en el wifi."""
     try:
@@ -619,84 +599,208 @@ def _es_tailscale(destino):
         return False
 
 
-def _buscar_bot():
-    """Busca el celular en la red: primero quién tiene el puerto abierto, después prueba SSH con la
-    huella guardada. Solo devuelve una IP si la huella coincide (si no, ssh corta antes de entrar)."""
-    usuario = BOT["destino"].split("@")[0] + "@" if "@" in BOT["destino"] else ""
-    with ThreadPoolExecutor(64) as pool:
-        abiertos = [ip for ip in pool.map(_puerto_abierto, _redes_locales()) if ip]
-    for ip in abiertos:
+class Bot:
+    """Un panel de bot: la misma plantilla para cada equipo de la lista "bots"."""
+
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.id = cfg["id"]
+        # Si el celular cambia de red, cambia de IP. Para encontrarlo sin riesgo de entrar a otro aparato,
+        # su huella SSH se guarda en known_hosts con un nombre fijo: ssh la compara antes de mandar la llave.
+        self.alias_nombre = cfg["huella"]
+        self.st = {"estado": "revisando" if cfg.get("destino") else "sin_configurar", "segundos": None, "revisado": None,
+                   "nombre": cfg.get("nombre", "Bot"), "dispositivo": cfg.get("dispositivo", "el celular"),
+                   "trabajo": None, "error": None}
+        self.ya = threading.Event()       # "revisá ahora", sin esperar los 30 s
+        self.buscar = threading.Event()   # "buscalo en la red ahora"
+
+    def _alias_listo(self):
+        """True si known_hosts ya tiene la huella del bot con el nombre fijo. Si no, la copia de la
+        entrada de la IP actual (la que quedó guardada la primera vez que entraste)."""
+        if subprocess.run(["ssh-keygen", "-F", self.alias_nombre], capture_output=True).returncode == 0:
+            return True
+        host, puerto = self.cfg["destino"].split("@")[-1], self.cfg.get("puerto", 22)
+        r = subprocess.run(["ssh-keygen", "-F", host if puerto == 22 else f"[{host}]:{puerto}"], capture_output=True, text=True)
+        lineas = [ln.split(" ", 1)[1] for ln in r.stdout.splitlines() if ln and not ln.startswith("#") and " " in ln]
+        if not lineas:
+            return False
+        with open(os.path.expanduser("~/.ssh/known_hosts"), "a") as f:
+            f.writelines(f"{self.alias_nombre} {ln}\n" for ln in lineas)
+        return True
+
+    def _ssh_base(self, destino):
+        ssh = ["ssh", "-p", str(self.cfg.get("puerto", 22)), "-o", "BatchMode=yes", "-o", "ConnectTimeout=6"]
+        if self.st.get("alias"):
+            ssh += ["-o", f"HostKeyAlias={self.alias_nombre}", "-o", "StrictHostKeyChecking=yes"]
+        return ssh + ["--", destino]
+
+    def ssh(self, comando, timeout=20):
+        return subprocess.run(self._ssh_base(self.cfg["destino"]) + [comando], capture_output=True, text=True, timeout=timeout)
+
+    def _puerto_abierto(self, ip):
         try:
-            r = subprocess.run(_ssh_base(usuario + ip) + ["true"], capture_output=True, timeout=15)
-            if r.returncode == 0:
+            with socket.create_connection((ip, self.cfg.get("puerto", 22)), timeout=0.6):
                 return ip
-        except (OSError, subprocess.SubprocessError):
-            pass
-    return None
+        except OSError:
+            return None
 
-
-def _bot_info():
-    """Lo que ve la página: estado más a qué equipo pregunta y qué se puede hacer."""
-    info = dict(_amfbot)
-    if BOT.get("destino"):
-        info["host"] = BOT["destino"].split("@")[-1]
-        info["puerto"] = BOT.get("puerto", 22)
-    info["puede_arrancar"] = bool(BOT.get("arrancar"))
-    info["puede_buscar"] = bool(info.get("alias"))
-    return info
-
-
-def _vigilar_amfbot():
-    """Cada 30 s pregunta al celular si el bot está andando (en un hilo aparte)."""
-    if DEMO:
-        _amfbot.update(estado="andando", segundos=3 * 86400 + 5 * 3600, revisado=time.strftime("%H:%M"))
-        return
-    if not BOT:
-        return
-    ultima_busqueda = 0
-    while True:
-        _amfbot_ya.clear()
-        if not _amfbot.get("alias"):
+    def _buscar(self):
+        """Busca el celular en la red: primero quién tiene el puerto abierto, después prueba SSH con la
+        huella guardada. Solo devuelve una IP si la huella coincide (si no, ssh corta antes de entrar)."""
+        usuario = self.cfg["destino"].split("@")[0] + "@" if "@" in self.cfg["destino"] else ""
+        with ThreadPoolExecutor(64) as pool:
+            abiertos = [ip for ip in pool.map(self._puerto_abierto, _redes_locales()) if ip]
+        for ip in abiertos:
             try:
-                _amfbot["alias"] = _alias_listo()
-            except OSError:
+                r = subprocess.run(self._ssh_base(usuario + ip) + ["true"], capture_output=True, timeout=15)
+                if r.returncode == 0:
+                    return ip
+            except (OSError, subprocess.SubprocessError):
                 pass
-        try:
-            r = _bot_ssh(BOT["comando"])
-            lineas = [ln.strip() for ln in r.stdout.splitlines() if ln.strip()]
-            # Una línea que es solo un número = segundos andando; las demás son detalles para mostrar.
-            # Si una empieza con ⚠ el bot anda pero algo no está bien (luz amarilla).
-            detalle = [ln[:120] for ln in lineas if not ln.isdigit()][:4]
-            _amfbot.update(detalle=detalle, alerta=any(ln.startswith("⚠") for ln in detalle))
-            if r.returncode == 0:
-                nums = [int(ln) for ln in lineas if ln.isdigit()]
-                estado, seg = "andando", (nums[0] if nums else None)
-            elif r.returncode == 1:
-                estado, seg = "detenido", None
-            else:
+        return None
+
+    def info(self):
+        """Lo que ve la página: estado más a qué equipo pregunta y qué se puede hacer."""
+        info = dict(self.st, id=self.id)
+        if self.cfg.get("destino"):
+            info["host"] = self.cfg["destino"].split("@")[-1]
+            info["puerto"] = self.cfg.get("puerto", 22)
+        info["puede_arrancar"] = bool(self.cfg.get("arrancar"))
+        info["puede_buscar"] = bool(info.get("alias"))
+        return info
+
+    def vigilar(self):
+        """Cada 30 s pregunta al equipo si el bot está andando (en un hilo aparte)."""
+        st = self.st
+        if DEMO:
+            st.update(estado="andando", segundos=3 * 86400 + 5 * 3600, revisado=time.strftime("%H:%M"))
+            return
+        if not self.cfg.get("destino") or not self.cfg.get("comando"):
+            return
+        ultima_busqueda = 0
+        while True:
+            self.ya.clear()
+            if not st.get("alias"):
+                try:
+                    st["alias"] = self._alias_listo()
+                except OSError:
+                    pass
+            try:
+                r = self.ssh(self.cfg["comando"])
+                lineas = [ln.strip() for ln in r.stdout.splitlines() if ln.strip()]
+                # Una línea que es solo un número = segundos andando; las demás son detalles para mostrar.
+                # Si una empieza con ⚠ el bot anda pero algo no está bien (luz amarilla).
+                detalle = [ln[:120] for ln in lineas if not ln.isdigit()][:4]
+                st.update(detalle=detalle, alerta=any(ln.startswith("⚠") for ln in detalle))
+                if r.returncode == 0:
+                    nums = [int(ln) for ln in lineas if ln.isdigit()]
+                    estado, seg = "andando", (nums[0] if nums else None)
+                elif r.returncode == 1:
+                    estado, seg = "detenido", None
+                else:
+                    estado, seg = "sin_conexion", None
+            except (OSError, subprocess.SubprocessError):
                 estado, seg = "sin_conexion", None
+            st.update(estado=estado, segundos=seg, revisado=time.strftime("%H:%M"))
+            if estado != "sin_conexion" and st.get("error") == "buscar":
+                st["error"] = None
+            if st.get("trabajo") == "revisar":
+                st["trabajo"] = None
+            # Sin conexión: lo busca en la red solo (como mucho cada 2 min) o cuando se lo pedís
+            pedido = self.buscar.is_set()
+            if st.get("alias") and (pedido or (estado == "sin_conexion" and not _es_tailscale(self.cfg["destino"])
+                                               and time.time() - ultima_busqueda > 120)):
+                self.buscar.clear()
+                ultima_busqueda = time.time()
+                st.update(trabajo="buscar", error=None)
+                ip = self._buscar()
+                st["trabajo"] = None
+                if ip and ip != self.cfg["destino"].split("@")[-1] and self.cambiar_host(ip):
+                    st["encontrado"] = ip
+                    continue   # revisa de nuevo ya, con la IP nueva
+                if not ip:
+                    st["error"] = "buscar"
+            self.ya.wait(30)
+
+    def _arrancar(self):
+        try:
+            r = self.ssh(self.cfg["arrancar"], timeout=30)
+            self.st["error"] = None if r.returncode == 0 else "arrancar"
         except (OSError, subprocess.SubprocessError):
-            estado, seg = "sin_conexion", None
-        _amfbot.update(estado=estado, segundos=seg, revisado=time.strftime("%H:%M"))
-        if estado != "sin_conexion" and _amfbot.get("error") == "buscar":
-            _amfbot["error"] = None
-        if _amfbot.get("trabajo") == "revisar":
-            _amfbot["trabajo"] = None
-        # Sin conexión: lo busca en la red solo (como mucho cada 2 min) o cuando se lo pedís
-        pedido = _amfbot_buscar.is_set()
-        if _amfbot.get("alias") and (pedido or (estado == "sin_conexion" and not _es_tailscale(BOT["destino"])
-                                                and time.time() - ultima_busqueda > 120)):
-            _amfbot_buscar.clear()
-            ultima_busqueda = time.time()
-            _amfbot.update(trabajo="buscar", error=None)
-            ip = _buscar_bot()
-            _amfbot["trabajo"] = None
-            if ip and ip != BOT["destino"].split("@")[-1] and _bot_cambiar_host(ip):
-                _amfbot["encontrado"] = ip
-                continue   # revisa de nuevo ya, con la IP nueva
-            if not ip:
-                _amfbot["error"] = "buscar"
-        _amfbot_ya.wait(30)
+            self.st["error"] = "arrancar"
+        time.sleep(8)   # que el proceso termine de levantar antes de preguntar
+        self.st["trabajo"] = "revisar"
+        self.ya.set()
+
+    def cambiar_host(self, host):
+        """Cambia la IP (o nombre) del equipo en local/config.json, sin tocar el resto."""
+        with _config_lock:
+            try:
+                with open(LOCAL) as f:
+                    cfg = json.load(f)
+            except (OSError, ValueError):
+                return False
+            if isinstance(cfg.get("bots"), list):
+                propio = next((b for b in cfg["bots"] if isinstance(b, dict) and b.get("id") == self.id), None)
+            else:
+                propio = cfg.get("bot") if isinstance(cfg.get("bot"), dict) else None
+            if propio is None:
+                return False
+            destino = self.cfg["destino"]
+            usuario = destino.split("@")[0] + "@" if "@" in destino else ""
+            self.cfg["destino"] = propio["destino"] = usuario + host
+            tmp = LOCAL + ".tmp"
+            try:
+                with open(tmp, "w") as f:
+                    json.dump(cfg, f, indent=2, ensure_ascii=False)
+                    f.write("\n")
+                os.chmod(tmp, os.stat(LOCAL).st_mode & 0o777)
+                os.replace(tmp, LOCAL)
+            except OSError:
+                return False
+            return True
+
+    def accion(self, que, valor=None):
+        st = self.st
+        if DEMO or not self.cfg.get("destino"):
+            return False
+        if que != "terminal" and st.get("trabajo"):
+            return False
+        if que == "revisar":
+            st.update(trabajo="revisar", error=None)
+            self.ya.set()
+            return True
+        if que == "buscar" and st.get("alias"):
+            st.update(trabajo="buscar", error=None)
+            self.buscar.set()
+            self.ya.set()
+            return True
+        if que == "arrancar" and self.cfg.get("arrancar"):
+            st.update(trabajo="arrancar", error=None)
+            threading.Thread(target=self._arrancar, daemon=True).start()
+            return True
+        if que == "terminal":
+            # G5_BOT le dice a bot-ssh.sh a cuál de los bots entrar
+            cmd = shlex.join(["env", "G5_BOT=" + self.id, "foot", "-T", st["nombre"], os.path.join(CARPETA, "bot-ssh.sh")])
+            esconder_inicio()
+            subprocess.Popen(["swaymsg", "exec", "--", cmd], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return True
+        if que == "ip" and isinstance(valor, str) and HOST.fullmatch(valor.strip()):
+            if not self.cambiar_host(valor.strip()):
+                return False
+            st.update(estado="revisando", segundos=None, trabajo="revisar", error=None)
+            self.ya.set()
+            return True
+        return False
+
+
+_config_lock = threading.Lock()   # dos bots que cambian de IP a la vez no se pisan la config
+BOTS = {b["id"]: Bot(b) for b in BOTS_CFG}
+
+
+def bot_accion(ident, que, valor=None):
+    bot = BOTS.get(ident) if isinstance(ident, str) else None
+    return bool(bot and bot.accion(que, valor))
 
 
 # ---------- Clima (PromClim) ----------
@@ -762,70 +866,6 @@ def _vigilar_clima():
         time.sleep(1800 if nuevo["estado"] == "ok" else 300)
 
 
-def _bot_arrancar():
-    try:
-        r = _bot_ssh(BOT["arrancar"], timeout=30)
-        _amfbot["error"] = None if r.returncode == 0 else "arrancar"
-    except (OSError, subprocess.SubprocessError):
-        _amfbot["error"] = "arrancar"
-    time.sleep(8)   # que el proceso termine de levantar antes de preguntar
-    _amfbot["trabajo"] = "revisar"
-    _amfbot_ya.set()
-
-
-def _bot_cambiar_host(host):
-    """Cambia la IP (o nombre) del celular en local/config.json, sin tocar el resto."""
-    try:
-        with open(LOCAL) as f:
-            cfg = json.load(f)
-    except (OSError, ValueError):
-        return False
-    if not isinstance(cfg.get("bot"), dict):
-        return False
-    usuario = BOT["destino"].split("@")[0] + "@" if "@" in BOT["destino"] else ""
-    BOT["destino"] = cfg["bot"]["destino"] = usuario + host
-    tmp = LOCAL + ".tmp"
-    try:
-        with open(tmp, "w") as f:
-            json.dump(cfg, f, indent=2, ensure_ascii=False)
-            f.write("\n")
-        os.chmod(tmp, os.stat(LOCAL).st_mode & 0o777)
-        os.replace(tmp, LOCAL)
-    except OSError:
-        return False
-    return True
-
-
-def bot_accion(que, valor=None):
-    if DEMO or not BOT.get("destino"):
-        return False
-    if que != "terminal" and _amfbot.get("trabajo"):
-        return False
-    if que == "revisar":
-        _amfbot.update(trabajo="revisar", error=None)
-        _amfbot_ya.set()
-        return True
-    if que == "buscar" and _amfbot.get("alias"):
-        _amfbot.update(trabajo="buscar", error=None)
-        _amfbot_buscar.set()
-        _amfbot_ya.set()
-        return True
-    if que == "arrancar" and BOT.get("arrancar"):
-        _amfbot.update(trabajo="arrancar", error=None)
-        threading.Thread(target=_bot_arrancar, daemon=True).start()
-        return True
-    if que == "terminal":
-        cmd = shlex.join(["foot", "-T", BOT.get("nombre", "Bot"), os.path.join(CARPETA, "bot-ssh.sh")])
-        esconder_inicio()
-        subprocess.Popen(["swaymsg", "exec", "--", cmd], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        return True
-    if que == "ip" and isinstance(valor, str) and HOST.fullmatch(valor.strip()):
-        if not _bot_cambiar_host(valor.strip()):
-            return False
-        _amfbot.update(estado="revisando", segundos=None, trabajo="revisar", error=None)
-        _amfbot_ya.set()
-        return True
-    return False
 
 
 def datos():
@@ -853,7 +893,7 @@ def datos():
         "brillo": brillo(),
         "volumen": volumen(),
         "sway": ventanas(),
-        "amfbot": _bot_info(),
+        "bots": [b.info() for b in BOTS.values()],
         "clima": _clima["v"],
         "temporizador": {"fin": _timer["fin"], "min": _timer["min"]} if _timer["fin"] else None,
         "bluetooth": bluetooth(),
@@ -1654,6 +1694,8 @@ class Manejador(BaseHTTPRequestHandler):
                 return self._responder(200, {"configurado": False})
             return self._responder(200, {"configurado": True, "orgs": DEERE.lista_orgs(),
                                          "flota": DEERE.ver_flota(), "archivos": DEERE.ver_archivos()})
+        if self.path == "/api/bots" and self._token_ok():
+            return self._responder(200, [{"id": b.id, "nombre": b.st["nombre"]} for b in BOTS.values()])
         if self.path == "/api/web" and self._token_ok():
             return self._responder(200, web_lista())
         if self.path.startswith("/api/web/archivos?") and self._token_ok():
@@ -1725,7 +1767,7 @@ class Manejador(BaseHTTPRequestHandler):
             _yt_cache["t"] = 0
             return self._responder(200, {"ok": True})
         if self.path == "/api/bot":
-            ok = bot_accion(cuerpo.get("que"), cuerpo.get("valor"))
+            ok = bot_accion(cuerpo.get("id"), cuerpo.get("que"), cuerpo.get("valor"))
             return self._responder(200 if ok else 409, {"ok": ok})
         if self.path == "/api/bluetooth":
             ok = bt_accion(cuerpo.get("que"), cuerpo.get("mac"))
@@ -1758,7 +1800,8 @@ class Manejador(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    threading.Thread(target=_vigilar_amfbot, daemon=True).start()
+    for _b in BOTS.values():
+        threading.Thread(target=_b.vigilar, daemon=True).start()
     threading.Thread(target=_vigilar_clima, daemon=True).start()
     threading.Thread(target=_contar_red, daemon=True).start()
     ThreadingHTTPServer(("127.0.0.1", PUERTO), Manejador).serve_forever()

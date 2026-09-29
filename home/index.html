@@ -474,8 +474,8 @@
   .hoja-ip .chip { min-height: 44px; }
   .hoja-aviso { font-size: 14px; color: var(--muted); line-height: 1.45; }
   .hoja-aviso code { font-size: 14px; color: var(--ink); background: var(--track); padding: 1px 5px; border-radius: 3px; }
-  .mod[data-k="bt"], .mod[data-k="amfbot"], .mod[data-k="clima"] { cursor: pointer; }
-  .editing .mod[data-k="bt"], .editing .mod[data-k="amfbot"], .editing .mod[data-k="clima"] { cursor: grab; }
+  .mod[data-k="bt"], .mod[data-k^="bot"], .mod[data-k="clima"] { cursor: pointer; }
+  .editing .mod[data-k="bt"], .editing .mod[data-k^="bot"], .editing .mod[data-k="clima"] { cursor: grab; }
   .mod.choca { outline-color: var(--crit) !important; }
   /* Todos los paneles con menú se abren al tocarlos */
   .mod.con-hoja { cursor: pointer; }
@@ -697,7 +697,6 @@
                <button type="button" class="chip" id="btPower">—</button></div><div class="sub" id="btSub">—</div>
              <div class="det bt-lista" id="btLista"></div>
              <div class="bt-pie"><button type="button" class="chip" data-bt="buscar" id="btBuscar">Buscar nuevos</button></div>` },
-    amfbot: { name: "Bot", html: `<div class="bot"><span class="bot-luz" id="botLuz"></span><span class="bot-txt" id="botTxt">Revisando…</span></div><div class="sub" id="botSub">—</div>` },
     clima:  { name: "Clima", html: `<div class="big"><span id="climaMax">—</span><small id="climaMin"></small></div><div class="sub" id="climaSub">Revisando…</div>
              <div class="det" id="climaDias"></div>` },
     reloj:  { name: "Reloj", html: `<div class="reloj"><span id="relojHora">--:--</span><small id="relojSeg">00</small></div><div class="sub fecha" id="relojFecha">—</div>` },
@@ -734,6 +733,16 @@
       <div class="sub" id="jdfSub">Cargando…</div><div class="det jd-lista" id="jdfLista"></div>` };
     deere = d;
   }
+  // Paneles de bots: la misma plantilla para cada uno de local/config.json ("bots"). La clave es "bot" + id.
+  let primerBot = null;
+  function registrarBots(lista) {
+    lista.forEach(b => {
+      const k = "bot" + b.id;
+      MODS[k] = { name: b.nombre || "Bot", esBot: b.id, html: `<div class="bot"><span class="bot-luz" data-botluz></span><span class="bot-txt" data-bottxt>Revisando…</span></div><div class="sub" data-botsub>—</div>` };
+      HOJAS[k] = hojaBot(b.id);
+      if (!primerBot) primerBot = k;
+    });
+  }
   // Paneles web: salen de local/config.json ("web"), por ejemplo Operations Center y Files
   function registrarWeb(lista) {
     lista.forEach(w => {
@@ -761,6 +770,8 @@
   }
   setInterval(() => { if (vista === "run" && !editing) cargarArchivos(); }, 30000);
   const TAM = ["s", "m", "g"];
+  // "amfbot" = el panel del bot de antes: ahora es el primero de la lista
+  const deBot = (k) => k === "amfbot" ? primerBot : k;
   const DEFAULT = () => [{ paneles: [
     ["amfbot", "s"], ["cpu", "m"], ["ram", "s"],
     ["bat", "m"], ["net", "m"],
@@ -769,7 +780,7 @@
     ["reloj", "s"], ["musica", "m"], ["notas", "s"],
     ["mapa", "g"], ["youtube", "g"],
     ["bt", "m"]
-  ].map(([k, t]) => ({ k, t })) }];
+  ].map(([k, t]) => ({ k, t })) }].map(x => ({ paneles: x.paneles.map(p => ({ k: deBot(p.k), t: p.t })).filter(p => p.k) }));
   let paginas = DEFAULT();
   let pg = 0;
   let editing = false;
@@ -976,8 +987,8 @@
     $("modules").innerHTML = `<div class="lienzo" id="lienzo">${lista.length ? lista.map((p, i) => {
       const m = MODS[p.k];
       return `<div class="mod ${p.t}${HOJAS[p.k] || p.k === "wifi" || p.k === "clima" ? " con-hoja" : ""}" data-i="${i}" data-k="${p.k}">
-        <h3>${p.t === "s" ? m.name : (m.title || m.name)}</h3>
-        <div class="edit-ctl"><button type="button" class="rm" data-rm aria-label="Quitar ${m.name}">✕</button></div>
+        <h3>${esc(p.t === "s" ? m.name : (m.title || m.name))}</h3>
+        <div class="edit-ctl"><button type="button" class="rm" data-rm aria-label="Quitar ${esc(m.name)}">✕</button></div>
         <div class="body">${m.html}</div>
         <span class="medida"></span><span class="tirador" aria-hidden="true"></span></div>`;
     }).join("") : '<div class="hint">Run Page vacía. Tocá <b>Editar</b> y agregá paneles.</div>'}</div>`;
@@ -986,7 +997,7 @@
 
     const off = Object.keys(MODS).filter(k => !lista.some(p => p.k === k));
     $("trayItems").innerHTML = off.length
-      ? off.map(k => `<button type="button" data-add="${k}">+ ${MODS[k].name}</button>`).join(" ")
+      ? off.map(k => `<button type="button" data-add="${k}">+ ${esc(MODS[k].name)}</button>`).join(" ")
       : "<span>Ya están todos en esta Run Page.</span>";
 
     const varias = paginas.length > 1;
@@ -1012,7 +1023,7 @@
     const lz = $("lienzo"); if (!lz) return;
     clases();
     // El título corto o largo depende del tamaño
-    lz.querySelectorAll('.mod:not([data-k="amfbot"])').forEach(el => {
+    lz.querySelectorAll('.mod:not([data-k^="bot"])').forEach(el => {
       const m = MODS[el.dataset.k]; el.querySelector("h3").textContent = el.classList.contains("s") ? m.name : (m.title || m.name);
     });
   }
@@ -1699,6 +1710,33 @@
   const salidasLista = (x) => !x.salidas ? "" : x.salidas.length < 2 ? "" : `<h4>Por dónde sale el sonido</h4><div class="hoja-lista">${x.salidas.map(s => `<div class="fila">
       <span>${esc(s.desc)}</span><span class="acc">${s.activa ? boton("disabled", "En uso", "on") : boton(`data-h="salida" data-nombre="${esc(s.nombre)}"`, "Usar")}</span></div>`).join("")}</div>`;
 
+  // El menú de un bot (plantilla: uno por cada bot de la lista)
+  const botDe = (d, id) => (d.bots || []).find(b => b.id === id) || {};
+  const hojaBot = (id) => ({ tit: (d) => botDe(d, id).nombre || "Bot", fijo: (d) => {
+      const bot = botDe(d, id);
+      return !bot.host ? "" : `<div class="hoja-ip">
+        <label for="hojaIp">IP de ${esc(bot.dispositivo || "el celular")}</label>
+        <div class="cfg"><input id="hojaIp" type="text" inputmode="decimal" spellcheck="false" value="${esc(bot.host)}">
+          <button type="button" class="chip" data-bot="ip">Guardar</button></div>
+        <div class="hoja-aviso">${bot.puede_buscar ? `Si ${esc(bot.dispositivo || "el celular")} cambió de red, lo busco solo. Si no lo encuentro, ` : `Si ${esc(bot.dispositivo || "el celular")} cambió de red, la IP cambia: `}en Termux escribí <code>ifconfig</code>
+          y copiá el número que sigue a <code>inet</code> y empieza igual que el de esta compu.</div></div>`;
+    }, vivo: (d) => {
+      const bot = botDe(d, id), dis = bot.trabajo ? " disabled" : "";
+      return `<div class="bt-cab"><span class="bot-luz ${botLuz(bot)}"></span><span class="bot-txt">${esc(botTxt(bot))}</span></div>
+        <div class="sub">${esc(botResumen(bot))}</div>
+        ${botDetalle(bot).length ? `<div class="det">${botDetalle(bot).map(ln => `<div class="fila"><span>${esc(ln)}</span></div>`).join("")}</div>` : ""}
+        <div class="hoja-botones">
+          ${bot.puede_arrancar && bot.estado === "detenido" ? `<button type="button" class="chip prin" data-bot="arrancar"${dis}>Arrancar el bot</button>` : ""}
+          ${bot.puede_buscar && bot.estado === "sin_conexion" ? `<button type="button" class="chip prin" data-bot="buscar"${dis}>Buscar en la red</button>` : ""}
+          <button type="button" class="chip" data-bot="revisar"${dis}>${bot.trabajo === "revisar" ? "Revisando…" : "Revisar ahora"}</button>
+          ${bot.host ? `<button type="button" class="chip" data-bot="terminal">Entrar por SSH</button>` : ""}
+        </div>`;
+    }, despues: (d) => {
+      // Si la IP cambió sola (la encontró buscando), el campo la muestra, salvo que la estés escribiendo
+      const ip = $("hojaIp"), host = botDe(d, id).host;
+      if (ip && host && document.activeElement !== ip && ip.dataset.host !== host) { ip.dataset.host = host; ip.value = host; }
+    } });
+
   const HOJAS = {
     cpu: { tit: "Procesador", extra: true, vivo: (d, x) => {
       const cd = d.cpu_det || {};
@@ -1847,31 +1885,6 @@
           <div class="hoja-botones">${boton('data-jd="files" data-id="rx"', "Prescripciones", "prin")}${boton('data-jd="files"', "Abrir Deere Files")}${boton(`data-jd="actualizar"${a.cargando ? " disabled" : ""}`, "Actualizar")}</div>`;
       } },
 
-    amfbot: { tit: (d) => (d.amfbot || {}).nombre || "Bot", fijo: (d) => {
-      const bot = d.amfbot || {};
-      return !bot.host ? "" : `<div class="hoja-ip">
-        <label for="hojaIp">IP de ${esc(bot.dispositivo || "el celular")}</label>
-        <div class="cfg"><input id="hojaIp" type="text" inputmode="decimal" spellcheck="false" value="${esc(bot.host)}">
-          <button type="button" class="chip" data-bot="ip">Guardar</button></div>
-        <div class="hoja-aviso">${bot.puede_buscar ? `Si ${esc(bot.dispositivo || "el celular")} cambió de red, lo busco solo. Si no lo encuentro, ` : `Si ${esc(bot.dispositivo || "el celular")} cambió de red, la IP cambia: `}en Termux escribí <code>ifconfig</code>
-          y copiá el número que sigue a <code>inet</code> y empieza igual que el de esta compu.</div></div>`;
-    }, vivo: (d) => {
-      const bot = d.amfbot || {}, dis = bot.trabajo ? " disabled" : "";
-      return `<div class="bt-cab"><span class="bot-luz ${botLuz(bot)}"></span><span class="bot-txt">${esc(botTxt(bot))}</span></div>
-        <div class="sub">${esc(botResumen(bot))}</div>
-        ${botDetalle(bot).length ? `<div class="det">${botDetalle(bot).map(ln => `<div class="fila"><span>${esc(ln)}</span></div>`).join("")}</div>` : ""}
-        <div class="hoja-botones">
-          ${bot.puede_arrancar && bot.estado === "detenido" ? `<button type="button" class="chip prin" data-bot="arrancar"${dis}>Arrancar el bot</button>` : ""}
-          ${bot.puede_buscar && bot.estado === "sin_conexion" ? `<button type="button" class="chip prin" data-bot="buscar"${dis}>Buscar en la red</button>` : ""}
-          <button type="button" class="chip" data-bot="revisar"${dis}>${bot.trabajo === "revisar" ? "Revisando…" : "Revisar ahora"}</button>
-          ${bot.host ? `<button type="button" class="chip" data-bot="terminal">Entrar por SSH</button>` : ""}
-        </div>`;
-    }, despues: (d) => {
-      // Si la IP cambió sola (la encontró buscando), el campo la muestra, salvo que la estés escribiendo
-      const ip = $("hojaIp"), host = (d.amfbot || {}).host;
-      if (ip && host && document.activeElement !== ip && ip.dataset.host !== host) { ip.dataset.host = host; ip.value = host; }
-    } },
-
     bt: { tit: "Bluetooth", vivo: (d) => {
       const bt = d.bluetooth || {}, tr = bt.trabajo || {}, ocupado = !!tr.que;
       return `<div class="bt-cab"><span class="bot-luz ${btLuz(bt)}"></span><span class="bot-txt">${esc(btTxt(bt))}</span>
@@ -1939,13 +1952,13 @@
     if (ds.bt) { api("/api/bluetooth", { que: ds.bt, mac: ds.mac || null }).then(actualizar).catch(() => {}); return; }
     if (ds.bot === "ip") {
       const v = $("hojaIp").value.trim(); if (!v) return;
-      api("/api/bot", { que: "ip", valor: v }).then(r => {
+      api("/api/bot", { id: MODS[k].esBot, que: "ip", valor: v }).then(r => {
         $("hojaIp").classList.toggle("mal", !r.ok);
         if (r.ok) actualizar();
       }).catch(() => {});
       return;
     }
-    if (ds.bot) { api("/api/bot", { que: ds.bot }).then(() => { if (ds.bot === "terminal") cerrarHoja(); actualizar(); }).catch(() => {}); return; }
+    if (ds.bot) { api("/api/bot", { id: MODS[k].esBot, que: ds.bot }).then(() => { if (ds.bot === "terminal") cerrarHoja(); actualizar(); }).catch(() => {}); return; }
     if (ds.lz) {
       api("/api/lanzar", { que: ds.lz }).then(actualizar).catch(() => {});
       if (!["brillo_mas", "brillo_menos"].includes(ds.lz)) cerrarHoja();
@@ -2127,15 +2140,15 @@
       }
     }
 
-    // AMF-Bot
-    const bot = d.amfbot || {};
-    const luz = $("botLuz");
-    if (luz) {
-      document.querySelectorAll('.mod[data-k="amfbot"] h3').forEach(h => { h.textContent = bot.nombre || "Bot"; });
-      luz.className = "bot-luz " + botLuz(bot);
-      set("botTxt", botTxt(bot));
-      set("botSub", botResumen(bot));
-    }
+    // Bots (cada panel busca sus datos por el id)
+    (d.bots || []).forEach(bot => {
+      document.querySelectorAll(`.mod[data-k="bot${bot.id}"]`).forEach(el => {
+        el.querySelector("h3").textContent = bot.nombre || "Bot";
+        el.querySelector("[data-botluz]").className = "bot-luz " + botLuz(bot);
+        el.querySelector("[data-bottxt]").textContent = botTxt(bot);
+        el.querySelector("[data-botsub]").textContent = botResumen(bot);
+      });
+    });
 
     // Clima (PromClim)
     const cl = d.clima || {};
@@ -2206,10 +2219,12 @@
     }).catch(() => { $("offline").hidden = false; });
   }
 
-  api("/api/web").then(registrarWeb).catch(() => {})
+  api("/api/bots").then(registrarBots).catch(() => {})
+    .then(() => api("/api/web")).then(registrarWeb).catch(() => {})
     .then(() => api("/api/deere")).then(registrarDeere).catch(() => {})
     .then(() => api("/api/estado")).then(e => {
     const limpiar = (lista) => lista
+      .map(p => p && Object.assign({}, p, { k: deBot(p.k) }))
       .filter(p => p && MODS[p.k])
       .map(p => {
         const q = { k: p.k, t: TAM.includes(p.t) ? p.t : "s" };

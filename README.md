@@ -56,7 +56,7 @@ Pantalla de login (opcional) para compus con dos usuarios: cada uno de un lado d
     temperaturas, **wifi con la carga del internet** (red, señal, rampa de carga, bajada y subida),
     **Bluetooth** (prender/apagar, conectar tus aparatos, ver su batería y vincular nuevos), disco, reloj,
     **música** (lo que suena en YouTube / YouTube Music, con barra para adelantar, volumen y la portada de fondo),
-    mapa, últimos videos de YouTube, notas y el estado de un bot que corre en otro equipo por SSH.
+    mapa, últimos videos de YouTube, notas y el estado de los bots que corren en otros equipos por SSH.
   - **Cada panel es un botón**: tocarlo abre su menú con más datos y acciones. Procesador y memoria: los
     programas que más usan. Wifi: redes cerca, conectar y desconectar. Disco: qué carpetas ocupan más y
     vaciar la papelera. Ventanas: ir a una o cerrarla. Brillo y volumen: deslizador y por dónde sale el
@@ -128,7 +128,7 @@ Se puede correr las veces que quieras.
 | Agrandar o achicar un panel | **Editar** y tirar de la esquina amarilla de abajo a la derecha |
 | Agregar o quitar paneles | **Editar** → **+ Agregar panel**, o la ✕ roja de cada panel |
 | Buscar y vincular un parlante | tocar el panel de **Bluetooth** (se abre su menú, aunque el panel sea chico) |
-| Revisar el bot, entrar por SSH o cambiarle la IP | tocar el panel del **bot** |
+| Revisar un bot, entrar por SSH o cambiarle la IP | tocar el panel de ese **bot** |
 | Ver más de cualquier panel o hacer algo con él | tocarlo (fuera de sus botones) |
 | Adelantar un tema | arrastrar la barra del panel de música |
 | Menú de apps | botón verde **Menú** (se cierra con la X amarilla o Esc) |
@@ -167,23 +167,39 @@ Para volver al login de antes:
 sudo rm /etc/lightdm/lightdm.conf.d/50-arch-sway-deer.conf && sudo systemctl restart lightdm
 ```
 
-## Panel del bot (opcional)
+## Paneles de bots (opcional)
 
-Muestra si un bot que corre en otro equipo (por ejemplo, un celular con Termux) está andando.
-Se configura en `local/config.json`, que no se sube al repo:
+Cada panel muestra si un bot que corre en otro equipo (por ejemplo, un celular con Termux) está andando.
+Es una plantilla: ponés uno por bot en la lista `bots` de `local/config.json` (que no se sube al repo)
+y cada uno tiene su propio panel, su menú y su huella SSH:
 
 ```json
 {
-  "bot": {
-    "nombre": "Mi bot",
-    "dispositivo": "el celular",
-    "destino": "usuario@192.168.1.50",
-    "puerto": 8022,
-    "comando": "pgrep -f mi-bot.js >/dev/null || exit 1",
-    "arrancar": "cd ~/mi-bot && nohup node mi-bot.js >/dev/null 2>&1 &"
-  }
+  "bots": [
+    {
+      "id": "mibot",
+      "nombre": "Mi bot",
+      "dispositivo": "el celular",
+      "destino": "usuario@192.168.1.50",
+      "puerto": 8022,
+      "comando": "pgrep -f mi-bot.js >/dev/null || exit 1",
+      "arrancar": "cd ~/mi-bot && nohup node mi-bot.js >/dev/null 2>&1 &"
+    },
+    {
+      "id": "otro",
+      "nombre": "Otro bot",
+      "dispositivo": "la tablet",
+      "destino": "usuario@100.100.100.100",
+      "puerto": 8022,
+      "comando": "for pid in $(pgrep -f 'node .*index.js'); do ps -o etimes= -p $pid; exit 0; done; exit 1"
+    }
+  ]
 }
 ```
+
+- `id`: solo letras minúsculas (hasta 17), distinto para cada bot. Los paneles aparecen en
+  **Editar → + Agregar panel** con su `nombre`.
+- El `"bot": { … }` suelto de versiones anteriores sigue andando (cuenta como una lista de uno).
 
 El `comando` corre en el otro equipo: tiene que salir con `0` si el bot anda (y puede imprimir cuántos
 segundos lleva andando) y con `1` si está detenido. Hace falta entrar por SSH **con llave**, sin contraseña.
@@ -194,12 +210,14 @@ Tocando el panel se abre un menú para revisar ahora, entrar por SSH en una term
 a mano y, si pusiste `arrancar` (opcional), levantar el bot cuando está detenido.
 
 **Si el celular cambia de red (y de IP), lo busca solo.** La primera vez que se conecta bien, guarda la
-huella SSH del celular en `~/.ssh/known_hosts` con el nombre `g5-bot`. Cuando lo pierde, busca en tu red
-quién tiene abierto el puerto y prueba SSH exigiendo esa huella: si no coincide, ssh corta antes de mandar
-tu llave, así que nunca entra a otro aparato. Al encontrarlo, actualiza `local/config.json`.
+huella SSH del equipo en `~/.ssh/known_hosts` con el nombre `g5-bot-<id>` (o el que pongas en `huella`).
+Cuando lo pierde, busca en tu red quién tiene abierto el puerto y prueba SSH exigiendo esa huella: si no
+coincide, ssh corta antes de mandar tu llave, así que nunca entra a otro aparato. Al encontrarlo, actualiza
+`local/config.json`. Con una dirección de [Tailscale](https://tailscale.com/) (100.x) no hace falta buscar.
 
-Para entrar desde la terminal con la IP al día: `home/bot-ssh.sh` (o con un comando atrás,
-`home/bot-ssh.sh uptime`). Podés hacerle un atajo, por ejemplo `ln -s ~/.config/g5/home/bot-ssh.sh ~/.local/bin/mibot`.
+Para entrar desde la terminal con la IP al día: `G5_BOT=mibot home/bot-ssh.sh` (o con un comando atrás,
+`G5_BOT=mibot home/bot-ssh.sh uptime`; sin `G5_BOT` entra al primero). Un atajo con el nombre del `id`
+elige ese bot solo: `ln -s ~/.config/g5/home/bot-ssh.sh ~/.local/bin/mibot`.
 
 ## Paneles web (opcional)
 
