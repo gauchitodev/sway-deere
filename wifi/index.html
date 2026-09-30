@@ -11,56 +11,58 @@
     --font: "Cantarell", "Noto Sans", sans-serif;
     --screen: #eceeea; --tile: #f8f9f6; --tile-edge: #b6beb8; --head: #dfe4df;
     --bar-off: #c9cfca; --ink: #1b211c; --muted: #59625b; --pill: #d4ead0; --pill-ink: #1d5a1c;
+    --tile-top: #ffffff; --cab: #2c2a24; --borde: #eef0ea;
   }
   html[data-mode="noche"] {
     color-scheme: dark;
     --screen: #2f2b26; --tile: #3a352f; --tile-edge: #585045; --head: #342f29;
     --bar-off: #4d463d; --ink: #ede7da; --muted: #b2a894; --status: #0b3a31;
     --pill: #25401f; --pill-ink: #b9e0a8;
+    --tile-top: #454039; --cab: #1c1915; --borde: #8d8474;
   }
   html, body { height: 100%; margin: 0; }
+  /* Como las ventanas de la S770: marco claro y grueso con el borde de adentro redondeado */
   body {
-    background: var(--screen); color: var(--ink); font: 16px var(--font);
-    display: grid; grid-template-rows: auto auto auto 1fr auto; overflow: hidden;
+    background: var(--borde); color: var(--ink); font: 16px var(--font);
+    padding: 7px; box-sizing: border-box; overflow: hidden;
     user-select: none; -webkit-user-select: none; touch-action: manipulation;
+  }
+  .caja {
+    height: 100%; display: grid; grid-template-rows: auto auto auto 1fr auto; overflow: hidden;
+    border-radius: 9px; background: linear-gradient(var(--tile-top), var(--screen) 40%);
   }
   button { font-family: var(--font); cursor: pointer; touch-action: manipulation; }
 
-  /* Barra de título verde, como la de la G5 */
+  /* Cabecera oscura con la ✕ amarilla, como las ventanas de la S770 */
   .titulo {
-    display: flex; align-items: center; gap: 12px; min-height: 52px; padding-left: 16px;
-    background: linear-gradient(to right, var(--green-deep), var(--green) 55%, var(--green-bright));
-    color: #fff; font-size: 19px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    display: flex; align-items: center; gap: 12px; min-height: 62px; padding: 7px 8px 7px 16px; box-sizing: border-box;
+    background: var(--cab); color: #fff; font-size: 24px; font-weight: 700;
   }
-  .titulo svg { width: 24px; height: 24px; }
+  .titulo svg { width: 26px; height: 26px; }
   .titulo .cerrar {
-    margin-left: auto; align-self: stretch; width: 60px; border: 0; background: rgba(0, 0, 0, .18);
-    color: #fff; font-size: 26px; line-height: 1;
+    margin-left: auto; width: 64px; height: 48px; border: 1px solid #a88f00; border-radius: 4px;
+    background: var(--yellow); color: var(--yellow-ink); font: 800 24px var(--font); line-height: 1;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5);
   }
-  .titulo .cerrar:active { background: var(--yellow); color: var(--yellow-ink); }
+  .titulo .cerrar:active { filter: brightness(.9); }
 
-  /* Bloque de estado verde azulado: la red de ahora */
+  /* La red de ahora, en una tarjeta clara redondeada (como la de "JD Display OS") */
   .estado {
-    display: flex; align-items: center; gap: 16px; padding: 16px;
-    background: var(--status); color: #fff;
+    display: flex; align-items: center; gap: 16px; padding: 14px 16px; margin: 12px;
+    background: linear-gradient(var(--tile-top), var(--tile)); border: 1px solid var(--tile-edge); border-radius: 8px;
   }
   .estado .txt { flex: 1; min-width: 0; display: grid; gap: 3px; }
   .estado b { font-size: 26px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .estado span { font-size: 14px; color: #bfd8cf; font-variant-numeric: tabular-nums; }
-  .estado .barras i { background: rgba(255, 255, 255, .22); }
-  .estado .barras i.on { background: var(--yellow); }
-  .estado .chip { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .5); }
-  .estado .chip:active { background: var(--yellow); color: var(--yellow-ink); }
+  .estado span { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
+  /* Título de sección en banda oscura, como los de los paneles */
   .cab {
-    display: flex; align-items: center; justify-content: space-between; padding: 9px 16px;
-    background: var(--head); border-bottom: 1px solid var(--tile-edge);
-    font-size: 13px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted);
+    display: flex; align-items: center; justify-content: space-between; padding: 7px 16px;
+    background: var(--cab); border-bottom: 1px solid #000; font-size: 16px; font-weight: 700; color: #fff;
   }
   .aviso { font-size: 14px; font-weight: 700; text-transform: none; letter-spacing: 0; }
-  .aviso.mal { color: var(--crit); }
-  .aviso.bien { color: var(--green); }
-  html[data-mode="noche"] .aviso.bien { color: var(--green-bright); }
+  .aviso.mal { color: #ff8a80; }
+  .aviso.bien { color: #9fdc7c; }
 
   .lista { overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
   .red { border-bottom: 1px solid var(--tile-edge); background: var(--tile); }
@@ -113,6 +115,7 @@
 </style>
 </head>
 <body>
+  <div class="caja">
   <div class="titulo">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 9a15 15 0 0 1 20 0"/><path d="M5.5 12.5a10 10 0 0 1 13 0"/><path d="M9 16a5 5 0 0 1 6 0"/><circle cx="12" cy="19.5" r="1"/></svg>
     Wifi
@@ -122,6 +125,7 @@
   <div class="cab"><span>Redes cerca</span><span class="aviso" id="aviso"></span></div>
   <div class="lista" id="lista"><div class="vacio">Buscando…</div></div>
   <div class="abajo"><button type="button" class="chip prin" id="buscar">Buscar redes</button></div>
+  </div>
 
 <script>
   const TOKEN = "__G5_TOKEN__";
