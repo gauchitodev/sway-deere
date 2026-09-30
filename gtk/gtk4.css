@@ -12,12 +12,26 @@
 @define-color sidebar_bg_color #e1e5e1;
 @define-color destructive_bg_color #c8322b;
 
+/* Barra de título verde, como la de la S770 (degradé de arriba a abajo) */
 headerbar, .titlebar {
-    background-image: linear-gradient(to right, #1d5a1c, #367c2b 55%, #5ea23a);
+    background-image: linear-gradient(#4a9433, #367c2b 45%, #2f6d25);
     color: #ffffff;
+    box-shadow: inset 0 -2px #1d4a17;
+}
+/* Diálogos con la cabecera oscura, como las ventanas emergentes */
+window.dialog headerbar, dialog headerbar, window.messagedialog .titlebar {
+    background-image: none;
+    background-color: #2c2a24;
     box-shadow: none;
 }
 headerbar button:not(.suggested-action):not(.destructive-action) { color: #ffffff; }
+/* La ✕ de cerrar en amarillo, como la del monitor */
+windowcontrols button.close {
+    background-color: #ffde00;
+    color: #1b211c;
+    border-radius: 4px;
+}
+windowcontrols button.close:hover { background-color: #ffe94d; }
 headerbar button:checked { background-color: #ffde00; color: #1b211c; }
 
 /* Lo seleccionado en amarillo, como el menú de la G5 */
@@ -45,3 +59,19 @@ headerbar button.suggested-action, headerbar button.default {
 }
 headerbar button.suggested-action:hover { background-color: #ffe94d; }
 headerbar button.suggested-action label { color: #1b211c; }
+
+/* Las apps GTK4 sin libadwaita (pavucontrol...) no usan los colores de arriba: se pintan a mano */
+scale trough highlight, progressbar progress, levelbar block.filled {
+    background-color: #367c2b;
+    border-color: #1d5a1c;
+}
+scale slider:hover { border-color: #367c2b; }
+notebook > header > tabs > tab:checked { box-shadow: inset 0 -3px #367c2b; }
+notebook > header > tabs > tab:checked label { font-weight: bold; }
+checkbutton check:checked, checkbutton radio:checked, check:checked, radio:checked {
+    background-color: #367c2b;
+    border-color: #1d5a1c;
+    color: #ffffff;
+}
+switch:checked { background-color: #367c2b; }
+entry:focus-within, spinbutton:focus-within { outline-color: #367c2b; }

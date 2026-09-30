@@ -7,15 +7,31 @@
 @define-color theme_selected_bg_color #ffde00;
 @define-color theme_selected_fg_color #1b211c;
 
-/* Barra de título verde con degradé, como la de la G5 */
+/* Barra de título verde, como la de la S770 (degradé de arriba a abajo) */
 headerbar, .titlebar {
-    background-image: linear-gradient(to right, #1d5a1c, #367c2b 55%, #5ea23a);
-    border-bottom: none;
+    background-image: linear-gradient(#4a9433, #367c2b 45%, #2f6d25);
+    border-bottom: 2px solid #1d4a17;
     box-shadow: none;
     color: #ffffff;
 }
+/* Los diálogos (guardar, abrir, preguntas) van con la cabecera oscura, como las ventanas emergentes */
+window.dialog headerbar, window.dialog .titlebar, messagedialog .titlebar {
+    background-image: none;
+    background-color: #2c2a24;
+    border-bottom: 1px solid #000000;
+}
+/* La ✕ de cerrar en amarillo, como la del monitor */
+headerbar button.titlebutton.close {
+    background-image: none;
+    background-color: #ffde00;
+    border: 1px solid #a88f00;
+    border-radius: 4px;
+    color: #1b211c;
+    -gtk-icon-shadow: none;
+}
+headerbar button.titlebutton.close:hover { background-color: #ffe94d; }
 headerbar .title, headerbar .subtitle, headerbar label { color: #ffffff; }
-headerbar button:not(.suggested-action):not(.destructive-action) {
+headerbar button:not(.suggested-action):not(.destructive-action):not(.close) {
     color: #ffffff;
     background-image: none;
     background-color: rgba(255, 255, 255, 0.12);

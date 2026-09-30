@@ -25,9 +25,10 @@
     --sc-bottom: #d6dcd7;
     --ink: #1b211c;
     --muted: #59625b;
-    --lcd: #0f4a3f;
-    --lcd-ink: #e9f5e4;
-    --lcd-muted: #9fc9bc;
+    --lcd-ink: var(--ink);
+    --lcd-muted: var(--muted);
+    --cab: #2c2a24;
+    --borde: #eef0ea;
   }
   html[data-mode="noche"] {
     color-scheme: dark;
@@ -41,32 +42,40 @@
     --sc-bottom: #2c2823;
     --ink: #ede7da;
     --muted: #b2a894;
-    --lcd: #0b3a31;
+    --cab: #1c1915;
+    --borde: #8d8474;
   }
   * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; }
+  /* Como las ventanas de la S770: marco claro y grueso con el borde de adentro redondeado */
+  html { height: 100%; background: var(--borde); }
   body {
-    background: var(--screen); color: var(--ink); font-family: var(--font);
+    height: calc(100% - 14px); margin: 7px; border-radius: 9px; overflow: hidden;
+    background: linear-gradient(var(--tile-top), var(--screen) 35%); color: var(--ink); font-family: var(--font);
     display: grid; grid-template-rows: auto auto 1fr;
     user-select: none; -webkit-user-select: none; touch-action: manipulation; overflow: hidden;
   }
 
-  /* Barra de título verde, como la barra de la G5 */
+  /* Cabecera oscura con la ✕ amarilla, como las ventanas de la S770 */
   header {
-    display: flex; align-items: center; gap: 10px; padding: 0 6px 0 14px; min-height: 44px;
-    background-image: linear-gradient(90deg, #1d5a1c, #367c2b 55%, #5ea23a); color: #fff;
+    display: flex; align-items: center; gap: 8px; padding: 6px 7px 6px 14px; min-height: 56px;
+    background: var(--cab); color: #fff;
   }
-  header h1 { margin: 0; font-size: 16px; letter-spacing: .04em; flex: 1; }
+  header h1 { margin: 0; font-size: 20px; font-weight: 700; flex: 1; }
   header button {
-    width: 40px; height: 36px; border: 0; border-radius: 3px; cursor: pointer;
-    background: transparent; color: #fff; font: 700 17px var(--font);
+    width: 44px; height: 42px; border: 0; border-radius: 4px; cursor: pointer;
+    background: transparent; color: #fff; font: 700 18px var(--font);
   }
-  header button:active { background: rgba(0, 0, 0, .2); }
+  header button:active { background: rgba(255, 255, 255, .15); }
+  header #cerrar {
+    width: 56px; background: var(--yellow); color: var(--yellow-ink); border: 1px solid #a88f00;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5);
+  }
+  header #cerrar:active { filter: brightness(.9); }
 
-  /* Visor: bloque de estado verde azulado */
+  /* Visor: tarjeta clara redondeada con el número grande, como los contadores de la S770 */
   .visor {
-    margin: 12px 12px 0; padding: 10px 14px 12px; border-radius: 4px;
-    background: var(--lcd); color: var(--lcd-ink); border: 1px solid rgba(0, 0, 0, .25);
+    margin: 12px 12px 0; padding: 10px 14px 12px; border-radius: 8px;
+    background: linear-gradient(var(--tile-top), var(--tile)); color: var(--lcd-ink); border: 1px solid var(--tile-edge);
     display: grid; gap: 4px; min-height: 118px; align-content: end;
   }
   .cinta { display: grid; gap: 2px; justify-items: end; min-height: 36px; align-content: end; }
@@ -76,7 +85,7 @@
   .expr span { direction: ltr; unicode-bidi: isolate; }
   .num { text-align: right; font-size: 44px; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; }
   .num.chico { font-size: 30px; }
-  .num.error { color: var(--yellow); font-size: 26px; }
+  .num.error { color: var(--crit); font-size: 26px; }
 
   /* Teclado */
   .teclas {
@@ -105,7 +114,7 @@
 </head>
 <body>
   <header>
-    <h1>CALCULADORA</h1>
+    <h1>Calculadora</h1>
     <button type="button" id="modo" aria-label="Cambiar modo día o noche">☾</button>
     <button type="button" id="cerrar" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </header>

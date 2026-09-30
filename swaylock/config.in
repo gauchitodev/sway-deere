@@ -9,15 +9,15 @@ show-failed-attempts
 line-uses-inside
 separator-color=00000000
 
-# Círculo: verde en reposo, amarillo al teclear
-inside-color=0f4a3fcc
+# Círculo: oscuro como las ventanas de la S770, aro verde en reposo, amarillo al teclear
+inside-color=2c2a24cc
 ring-color=367c2bff
 key-hl-color=ffde00ff
 bs-hl-color=c8322bff
 text-color=ffffffff
 
 # Borrando
-inside-clear-color=0f4a3fcc
+inside-clear-color=2c2a24cc
 ring-clear-color=ffde00ff
 text-clear-color=ffffffff
 
