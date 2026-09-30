@@ -335,6 +335,10 @@
   .editing .edit-ctl { display: flex; gap: 6px; position: absolute; top: 4px; right: 4px; z-index: 2; }
   /* Tirador para agrandar: esquina de abajo a la derecha, grande para el dedo */
   .tirador { display: none; }
+  /* Guías del imán: aparecen cuando un borde coincide con el de otro panel */
+  .guia { position: absolute; z-index: 25; pointer-events: none; background: var(--yellow); box-shadow: 0 0 4px rgba(0, 0, 0, .5); }
+  .guia.v { top: 0; bottom: 0; width: 2px; margin-left: -1px; }
+  .guia.h { left: 0; right: 0; height: 2px; margin-top: -1px; }
   .editing .tirador {
     display: block; position: absolute; right: 0; bottom: 0; width: 44px; height: 44px; z-index: 2;
     cursor: nwse-resize; touch-action: none;
@@ -1125,7 +1129,10 @@
     const { W, H } = lienzoTam();
     const r = enPx(p, W, H);
     arrastre = { el, p, tirar, W, H, id: e.pointerId, x0: e.clientX, y0: e.clientY,
-      r, ult: r, otros: obstaculos(p, W, H), nuevo: null };
+      r, ult: r, otros: obstaculos(p, W, H), nuevo: null,
+      // Todos los demás paneles (aunque estén encimados): contra sus bordes se imanta
+      todos: actual().filter(q => q !== p && q.x != null).map(q => enPx(q, W, H)) };
+    guias(null);
     el.classList.add("agarrado");
     el.setPointerCapture(e.pointerId);
     e.preventDefault();
@@ -1133,14 +1140,22 @@
   document.addEventListener("pointermove", (e) => {
     const a = arrastre; if (!a || e.pointerId !== a.id) return;
     const dx = e.clientX - a.x0, dy = e.clientY - a.y0;
-    const im = v => Math.round(v / PASO) * PASO;
     let { x, y, w, h } = a.r;
+    const T = a.todos;
     if (a.tirar) {
-      w = Math.min(Math.max(MIN_W, im(x + w + dx) - x), a.W - x);
-      h = Math.min(Math.max(MIN_H, im(y + h + dy) - y), a.H - y);
+      // El borde de la derecha / de abajo se pega al de otro panel, al lado de otro (dejando el hueco),
+      // o copia el ancho / alto de otro. Si no hay nada cerca, cae en la grilla.
+      // (alinear el borde gana; copiar el tamaño solo si no hay un borde cerca)
+      const der = imantar(x + w + dx, [a.W, ...T.flatMap(o => [o.x + o.w, o.x - PASO])], T.map(o => x + o.w));
+      const aba = imantar(y + h + dy, [a.H, ...T.flatMap(o => [o.y + o.h, o.y - PASO])], T.map(o => y + o.h));
+      w = Math.min(Math.max(MIN_W, der - x), a.W - x);
+      h = Math.min(Math.max(MIN_H, aba - y), a.H - y);
     } else {
-      x = Math.min(Math.max(0, im(x + dx)), a.W - w);
-      y = Math.min(Math.max(0, im(y + dy)), a.H - h);
+      // Se alinea con el borde izquierdo o derecho de otro panel, o se pone justo al lado
+      x = imantar(x + dx, [0, a.W - w, ...T.flatMap(o => [o.x, o.x + o.w - w, o.x + o.w + PASO, o.x - PASO - w])]);
+      y = imantar(y + dy, [0, a.H - h, ...T.flatMap(o => [o.y, o.y + o.h - h, o.y + o.h + PASO, o.y - PASO - h])]);
+      x = Math.min(Math.max(0, x), a.W - w);
+      y = Math.min(Math.max(0, y), a.H - h);
     }
     // Si choca, prueba moverse (o estirarse) en un solo sentido: así "resbala" contra el otro panel en vez de frenarse en seco
     const u = a.ult, libre = (r) => !a.otros.some(o => chocan(r, o));
@@ -1162,15 +1177,47 @@
     }
     a.ult = r; a.nuevo = nuevo;
     t = t || "s";
-    a.el.querySelector(".medida").textContent = a.tirar ? `${TAM_TXT[t]} · ${Math.round(r.w)} × ${Math.round(r.h)}` : TAM_TXT[t];
+    const igual = (u, v) => Math.abs(u - v) < 0.5;
+    const mismo = [T.some(o => igual(o.w, r.w)) && "mismo ancho", T.some(o => igual(o.h, r.h)) && "mismo alto"].filter(Boolean);
+    a.el.querySelector(".medida").textContent = (a.tirar ? `${TAM_TXT[t]} · ${Math.round(r.w)} × ${Math.round(r.h)}` : TAM_TXT[t])
+      + (a.tirar && mismo.length ? ` · ${mismo.join(" y ")}` : "");
+    guias(r, T);
   });
+  // Imán: si hay un borde de otro panel cerca, se pega ahí; si no, cae en la grilla de 16 px
+  const IMAN = 12;
+  function imantar(v, bordes, tamanos = []) {
+    const cerca = (lista) => {
+      let mejor = null, dist = IMAN;
+      for (const c of lista) { const d = Math.abs(c - v); if (d <= dist) { dist = d; mejor = c; } }
+      return mejor;
+    };
+    const b = cerca(bordes); if (b != null) return b;
+    const t = cerca(tamanos); if (t != null) return t;
+    return Math.round(v / PASO) * PASO;
+  }
+  // Guías amarillas donde un borde del panel que movés coincide con el de otro
+  function guias(r, otros = []) {
+    const lz = $("lienzo"); if (!lz) return;
+    lz.querySelectorAll(".guia").forEach(g => g.remove());
+    if (!r) return;
+    const igual = (u, v) => Math.abs(u - v) < 0.5;
+    const vs = new Set(), hs = new Set();
+    for (const o of otros) {
+      for (const e of [r.x, r.x + r.w]) for (const f of [o.x, o.x + o.w]) if (igual(e, f)) vs.add(Math.round(e));
+      for (const e of [r.y, r.y + r.h]) for (const f of [o.y, o.y + o.h]) if (igual(e, f)) hs.add(Math.round(e));
+    }
+    vs.forEach(x => lz.insertAdjacentHTML("beforeend", `<i class="guia v" style="left:${x}px"></i>`));
+    hs.forEach(y => lz.insertAdjacentHTML("beforeend", `<i class="guia h" style="top:${y}px"></i>`));
+  }
   function soltar(e) {
     const a = arrastre; if (!a || e.pointerId !== a.id) return;
     arrastre = null;
     a.el.classList.remove("agarrado", "choca");
+    guias(null);
     if (!a.nuevo) return;
-    const r4 = v => Math.round(v * 10000) / 10000;
-    Object.keys(a.nuevo).forEach(k => { a.p[k] = r4(a.nuevo[k]); });
+    // 6 decimales: con 4, dos bordes "iguales" podían quedar a 1 px de diferencia
+    const r6 = v => Math.round(v * 1e6) / 1e6;
+    Object.keys(a.nuevo).forEach(k => { a.p[k] = r6(a.nuevo[k]); });
     // El último que tocaste queda arriba de los demás
     const lista = actual(); lista.push(lista.splice(lista.indexOf(a.p), 1)[0]);
     renderModules(); guardar();
