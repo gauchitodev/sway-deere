@@ -37,6 +37,8 @@
     --center-glass: rgba(227, 231, 227, .86);
     --bar-glass: rgba(214, 220, 215, .9);
     --veil: rgba(236, 238, 234, .08);
+    --mod-cab: #2c2a24;
+    --hoja-borde: #eef0ea;
   }
   html[data-mode="noche"] {
     color-scheme: dark;
@@ -61,6 +63,8 @@
     --center-glass: rgba(41, 37, 31, .86);
     --bar-glass: rgba(44, 40, 35, .92);
     --veil: rgba(20, 17, 13, .35);
+    --mod-cab: #1c1915;
+    --hoja-borde: #8d8474;
   }
   html, body { height: 100%; margin: 0; }
   body {
@@ -125,24 +129,36 @@
   .mod.g .bars i { width: 34px; }
 
   /* Barra de Run Pages */
+  /* Barra de título verde, como la del monitor: nombre a la izquierda, hora y flechas a la derecha */
   .pagebar {
-    grid-row: 2; display: flex; align-items: stretch; min-height: 54px;
-    background: var(--bar-glass); backdrop-filter: blur(8px); border-bottom: 1px solid var(--tile-edge);
+    grid-row: 2; display: flex; align-items: stretch; min-height: 62px;
+    background: linear-gradient(#4a9433, var(--green) 45%, #2f6d25); color: #fff;
+    border-bottom: 2px solid #1d4a17;
   }
   .pagebar[hidden] { display: none !important; }
-  .pagebar button {
-    width: 80px; border: 0; background: transparent; color: var(--ink); cursor: pointer;
-    font: 700 22px var(--font);
-  }
-  .pagebar button:active { background: var(--tile-edge); }
-  .pagebar button:disabled { opacity: .3; }
-  .pgname { flex: 1; display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 17px; }
+  .pgname { flex: 1; display: flex; align-items: center; gap: 18px; padding: 0 22px; min-width: 0; font-size: 26px; }
+  .pgname b { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
   #pgDots { display: flex; gap: 7px; }
-  #pgDots i { width: 10px; height: 10px; border-radius: 50%; background: var(--bar-off); }
-  #pgDots i.on { background: var(--green-bright); }
+  #pgDots[hidden] { display: none; }
+  #pgDots i { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, .35); }
+  #pgDots i.on { background: #fff; }
+  .pghora {
+    display: flex; align-items: center; padding: 0 22px; font-size: 22px; font-weight: 700;
+    font-variant-numeric: tabular-nums; border-left: 1px solid rgba(0, 0, 0, .25);
+  }
+  .pgflechas { display: flex; }
+  .pgflechas[hidden] { display: none; }
+  .pagebar button {
+    width: 96px; border: 0; border-left: 1px solid rgba(0, 0, 0, .3); cursor: pointer; color: #fff;
+    background: linear-gradient(#3d8a2c, #2a6420); display: grid; place-items: center;
+  }
+  .pagebar button svg { width: 36px; height: 36px; }
+  .pagebar button:active { background: #1d4a17; }
+  .pagebar button:disabled { opacity: .35; }
   .mod h3 {
-    margin: 0; padding: 8px 12px; font-size: 13px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
-    background: var(--head-glass); border-bottom: 1px solid var(--tile-edge); color: var(--muted);
+    margin: 0; padding: 7px 12px; font-size: 16px; font-weight: 700; text-align: center;
+    background: var(--mod-cab); color: #fff; border-bottom: 1px solid #000;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .mod .body { padding: 14px 14px 12px; display: grid; gap: 10px; align-content: start; }
   .big { font-size: 48px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
@@ -344,8 +360,8 @@
 
   .center { border-left: 1px solid var(--tile-edge); background: var(--center-glass); backdrop-filter: blur(8px); display: flex; flex-direction: column; overflow-y: auto; }
   .center h4 {
-    margin: 0; padding: 8px 12px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
-    background: var(--status); color: #fff; text-align: center;
+    margin: 0; padding: 7px 12px; font-size: 16px; font-weight: 700;
+    background: var(--mod-cab); color: #fff; text-align: center; border-bottom: 1px solid #000;
   }
   .kv { padding: 12px 16px; border-bottom: 1px solid var(--tile-edge); display: grid; gap: 3px; }
   .kv b { font-size: 16px; overflow-wrap: anywhere; }
@@ -364,8 +380,8 @@
   .shortcuts { grid-row: 4; grid-column: 1; display: flex; background: var(--bar-glass); backdrop-filter: blur(8px); border-top: 1px solid var(--tile-edge); }
   .sc {
     flex: 1 1 0; min-width: 0; min-height: 84px;
-    background: transparent;
-    border: 0; border-right: 1px solid var(--tile-edge);
+    background: linear-gradient(var(--sc-top), var(--sc-bottom));
+    border: 0; border-right: 1px solid var(--tile-edge); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35);
     padding: 10px 4px 0; cursor: pointer; display: grid; justify-items: center; align-content: start; gap: 4px;
     font: 700 12px var(--font); color: var(--ink); text-transform: uppercase; letter-spacing: .04em;
   }
@@ -381,13 +397,17 @@
   /* Caja de apps (Menú), como el menú de la G5 */
   .menu { grid-row: 3; display: grid; grid-template-columns: 250px 1fr; min-height: 0; position: relative; }
   .menu[hidden], .run[hidden] { display: none !important; }
-  .side { background: var(--head-glass); backdrop-filter: blur(8px); border-right: 1px solid var(--tile-edge); display: flex; flex-direction: column; }
+  .side { background: var(--head-glass); backdrop-filter: blur(8px); border-right: 1px solid var(--tile-edge); display: flex; flex-direction: column; position: relative; z-index: 2; }
   .side button {
     text-align: left; font: 700 17px var(--font); color: var(--ink); cursor: pointer;
     background: none; border: 0; border-bottom: 1px solid var(--tile-edge);
     padding: 22px 20px; display: flex; justify-content: space-between; align-items: center;
   }
-  .side button[aria-pressed="true"] { background: var(--yellow); color: var(--yellow-ink); }
+  .side button[aria-pressed="true"] {
+    background: var(--yellow); color: var(--yellow-ink); margin-right: -18px; padding-right: 38px; position: relative; z-index: 1;
+    clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 0 100%);
+  }
+  .side button[aria-pressed="true"] span { visibility: hidden; }
   .side button:active:not([aria-pressed="true"]) { background: var(--tile-edge); }
   .side .nota { margin-top: auto; padding: 16px 20px; font-size: 13px; color: var(--muted); line-height: 1.4; }
   .tiles {
@@ -458,8 +478,15 @@
   .foto .secreto { padding: 22px 14px; text-align: center; color: var(--muted); font-size: 15px; }
   .huevo .xbtn { top: 12px; right: 12px; }
   /* Menú que se abre al tocar el panel del bot o del Bluetooth */
-  .hoja .huevo-caja { width: min(620px, 100%); border-color: var(--green-bright); }
-  .hoja .huevo-cab h2 { font-size: 20px; }
+  /* Como las ventanas de la S770: marco claro y grueso, cabecera oscura, la ✕ amarilla adentro */
+  .hoja { background: rgba(0, 0, 0, .55); }
+  .hoja .huevo-caja {
+    width: min(620px, 100%); border: 7px solid var(--hoja-borde); border-radius: 14px;
+    background: linear-gradient(var(--tile-top), var(--screen));
+  }
+  .hoja .huevo-cab { background: var(--mod-cab); min-height: 62px; box-sizing: border-box; padding: 10px 88px 10px 18px; }
+  .hoja .huevo-cab h2 { font-size: 24px; font-weight: 700; }
+  .hoja .xbtn { top: 7px; right: 8px; width: 64px; height: 48px; border: 1px solid #a88f00; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5); }
   .hoja-cuerpo { padding: 18px 22px 22px; display: grid; gap: 14px; font-size: 16px; }
   #hojaVivo { display: grid; gap: 14px; }
   .hoja-cuerpo .bt-cab .bot-txt { font-size: 26px; }
@@ -561,10 +588,13 @@
     <div class="tray-lista" id="trayItems" hidden></div>
   </div>
 
-  <div class="pagebar" id="pagebar" hidden>
-    <button type="button" id="pgPrev" aria-label="Run Page anterior">◀</button>
+  <div class="pagebar" id="pagebar">
     <div class="pgname"><b id="pgName">Run Page 1</b><span id="pgDots"></span></div>
-    <button type="button" id="pgNext" aria-label="Run Page siguiente">▶</button>
+    <span class="pghora" id="pgHora"></span>
+    <div class="pgflechas" id="pgFlechas">
+      <button type="button" id="pgPrev" aria-label="Run Page anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H5M11 5l-7 7 7 7"/></svg></button>
+      <button type="button" id="pgNext" aria-label="Run Page siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 5l7 7-7 7"/></svg></button>
+    </div>
   </div>
 
   <main class="run" id="viewRun">
@@ -1036,7 +1066,8 @@
       : "<span>Ya están todos en esta Run Page.</span>";
 
     const varias = paginas.length > 1;
-    $("pagebar").hidden = !varias;
+    // La barra verde queda siempre, como en el monitor; las flechas y los puntitos solo si hay varias Run Pages
+    $("pgFlechas").hidden = $("pgDots").hidden = !varias;
     $("pgPrev").disabled = $("pgNext").disabled = !varias;
     $("delPage").hidden = !varias;
     $("pgDots").innerHTML = paginas.map((_, i) => `<i class="${i === pg ? "on" : ""}"></i>`).join("");
@@ -1167,6 +1198,10 @@
     if (vista !== "run") mostrar("run");
     if (pg !== 0) irA(0);
   });
+  // Hora en la barra verde, como el 10:19 de la S770
+  const pintarHora = () => set("pgHora", new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false }));
+  pintarHora();
+  setInterval(pintarHora, 15000);
   $("pgPrev").addEventListener("click", () => deslizarA(-1));
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && vista === "menu") mostrar("run"); });
   $("pgNext").addEventListener("click", () => deslizarA(1));
@@ -1416,7 +1451,8 @@
     $("viewRun").hidden = v !== "run";
     $("viewMenu").hidden = v !== "menu";
     if (v === "menu") {
-      $("pagebar").hidden = true;
+      set("pgName", "Menú");
+      $("pgFlechas").hidden = $("pgDots").hidden = true;
       document.title = "Menú";
       cargarApps().then(renderTiles);
     } else {
