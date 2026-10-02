@@ -1,7 +1,7 @@
 # Pantalla de bloqueo con estilo G5 (la usa Super+Shift+X y el bloqueo automático)
 image=@G5@/bloqueo.jpg
 scaling=fill
-font=Cantarell
+font=Open Sans
 font-size=22
 indicator-radius=110
 indicator-thickness=14

@@ -1,6 +1,6 @@
 # Notificaciones con estilo G5: como las ventanas de la S770
 # (fondo oscuro, marco claro y grueso con esquinas redondeadas)
-font=Cantarell 11
+font=Open Sans, Cantarell 11
 background-color=#2c2a24
 text-color=#ffffff
 border-color=#eef0ea

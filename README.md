@@ -103,7 +103,7 @@ de esa barra y los retoca, y atajos como `Super+D` (lanzador) o `Super+Shift+X` 
 Sobre otro Sway con Waybar también anda, pero puede que falten módulos en la barra o algunos atajos.
 
 ```
-sudo pacman -S sway waybar wofi mako swaylock chromium python jq playerctl pamixer brightnessctl grim slurp wl-clipboard foot cantarell-fonts
+sudo pacman -S sway waybar wofi mako swaylock chromium python jq playerctl pamixer brightnessctl grim slurp wl-clipboard foot ttf-opensans cantarell-fonts
 ```
 
 No hace falta instalar nada de Python: el servidor de la pantalla de inicio usa solo la librería estándar.

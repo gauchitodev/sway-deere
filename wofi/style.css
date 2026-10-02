@@ -2,7 +2,7 @@
    marco claro y grueso, la barra de búsqueda en banda oscura y lo elegido en amarillo */
 window {
     background-color: transparent;
-    font-family: "Cantarell", sans-serif;
+    font-family: "Open Sans", "Cantarell", sans-serif;
     font-size: 15px;
 }
 #outer-box {

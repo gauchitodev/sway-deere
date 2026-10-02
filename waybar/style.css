@@ -3,6 +3,8 @@
 
 #waybar {
     background: #0f4a3f;          /* bloque de estado verde azulado */
+    /* Open Sans: la letra de los menús del monitor G5 */
+    font-family: "Open Sans", "Cantarell", "Symbols Nerd Font", "Font Awesome 7 Free", sans-serif;
     font-size: 14px;
 }
 
