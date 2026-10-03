@@ -252,6 +252,16 @@ def temp_de(nombre):
     return None
 
 
+def ventilador():
+    """Vueltas del ventilador (en la Dell lo da dell_smm); None si la compu no lo informa."""
+    for f in sorted(glob.glob("/sys/class/hwmon/*/fan*_input")):
+        rpm = leer_int(f)
+        if rpm is not None:
+            tope = leer_int(f.replace("_input", "_max"))
+            return {"rpm": rpm, "max": tope if tope and tope > 0 else None}
+    return None
+
+
 def temperatura():
     for n in glob.glob("/sys/class/hwmon/*/name"):
         if leer(n) == "k10temp":
@@ -888,6 +898,7 @@ def datos():
         "ram_total": total,
         "bateria": bateria(),
         "temp": temperatura(),
+        "ventilador": ventilador(),
         "red": red(),
         "disco": disco(),
         "brillo": brillo(),
@@ -1642,7 +1653,10 @@ def paginas_limpias(paginas):
 
 
 def estado_guardar(nuevo):
-    permitido = {k: nuevo[k] for k in ("paginas", "modo", "favoritas", "sonido", "notas", "mapa") if k in nuevo}
+    permitido = {k: nuevo[k] for k in ("paginas", "modo", "favoritas", "sonido", "notas", "mapa", "vidrio") if k in nuevo}
+    v = permitido.get("vidrio")
+    if "vidrio" in permitido and (not isinstance(v, int) or isinstance(v, bool) or not 0 <= v <= 90):
+        permitido.pop("vidrio")
     if not isinstance(permitido.get("mapa", ""), str):
         permitido.pop("mapa")
     if not isinstance(permitido.get("notas", ""), str):

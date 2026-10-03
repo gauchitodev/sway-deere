@@ -32,9 +32,11 @@
     --ink: #1b211c;
     --muted: #59625b;
     --spark-fill: rgba(54, 124, 43, .16);
-    --tile-glass: rgba(248, 249, 246, .86);
+    /* Transparencia de los paneles: --opac la regula el usuario (Editar → Transparencia) */
+    --opac: .86;
+    --tile-glass: color-mix(in srgb, #f8f9f6 calc(var(--opac) * 100%), transparent);
     --head-glass: rgba(223, 228, 223, .9);
-    --center-glass: rgba(227, 231, 227, .86);
+    --center-glass: color-mix(in srgb, #e3e7e3 calc(var(--opac) * 100%), transparent);
     --bar-glass: rgba(214, 220, 215, .9);
     --veil: rgba(236, 238, 234, .08);
     --mod-cab: #2c2a24;
@@ -58,9 +60,9 @@
     --muted: #b2a894;
     --spark-fill: rgba(94, 162, 58, .22);
     --status: #0b3a31;
-    --tile-glass: rgba(47, 43, 38, .84);
+    --tile-glass: color-mix(in srgb, #2f2b26 calc(var(--opac) * 100%), transparent);
     --head-glass: rgba(52, 47, 41, .9);
-    --center-glass: rgba(41, 37, 31, .86);
+    --center-glass: color-mix(in srgb, #29251f calc(var(--opac) * 100%), transparent);
     --bar-glass: rgba(44, 40, 35, .92);
     --veil: rgba(20, 17, 13, .35);
     --mod-cab: #1c1915;
@@ -92,7 +94,12 @@
   }
   .tray-lista[hidden] { display: none; }
   .tray-lista span { font-weight: 700; padding: 8px 4px; }
-  #addBtn[aria-expanded="true"] { background: #1b211c; color: var(--yellow); }
+  .vidrio-caja { flex-direction: column; flex-wrap: nowrap; width: 460px; gap: 12px; }
+  .vidrio-caja label { display: flex; justify-content: space-between; align-items: baseline; font-size: 16px; }
+  .vidrio-caja input[type=range] { width: 100%; height: 36px; accent-color: #1b211c; }
+  .vidrio-caja .fila-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .vidrio-caja small { font-weight: 600; font-size: 13px; }
+  #addBtn[aria-expanded="true"], #vidrioBtn[aria-expanded="true"] { background: #1b211c; color: var(--yellow); }
   .tray[hidden] { display: none !important; }
   .tray button {
     font: 700 15px var(--font); cursor: pointer; min-height: 44px;
@@ -115,7 +122,7 @@
     background: var(--tile-glass); border: 1px solid var(--tile-edge); border-radius: 4px;
     display: grid; grid-template-rows: auto 1fr; position: absolute; box-sizing: border-box;
     min-width: 0; min-height: 0; overflow: hidden;
-    backdrop-filter: blur(8px); box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+    backdrop-filter: blur(calc(2px + var(--opac) * 7px)); box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
   }
   .mod .body { min-height: 0; overflow: hidden; }
   /* El tamaño (s / m / g) se deduce solo de las medidas del panel */
@@ -398,6 +405,56 @@
   .sc.menu-btn:active { background: var(--green-bright); }
   button:focus-visible { outline: 3px solid var(--yellow); outline-offset: -3px; }
 
+  /* Equipo: la compu al medio con puntos sobre cada parte y líneas a sus valores,
+     como "Config de cosecha" del monitor (la cosechadora con sus ajustes alrededor) */
+  .mod[data-k="equipo"] .body { padding: 10px; display: block; container-type: size; }
+  .eq { position: relative; height: 100%;
+    display: grid; grid-template-columns: minmax(118px, 1fr) minmax(0, 2.1fr) minmax(118px, 1fr); gap: 10px; }
+  .eq-col { display: grid; grid-auto-rows: 1fr; gap: 8px; min-height: 0; position: relative; z-index: 1; }
+  /* Recuadros como los del monitor: ícono arriba, número grande, y abajo qué es */
+  .eq-t {
+    display: grid; justify-items: center; align-content: center; gap: 2px;
+    min-height: 0; padding: 6px 8px; text-align: center; cursor: pointer; color: var(--ink);
+    background: color-mix(in srgb, var(--tile-top) calc(min(1, var(--opac) + .1) * 100%), transparent);
+    border: 1px solid var(--tile-edge); border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .18); font: inherit; overflow: hidden;
+  }
+  .eq-t:active { transform: scale(.97); border-color: var(--green); }
+  .eq-t svg { width: clamp(20px, 5cqh, 30px); height: clamp(20px, 5cqh, 30px); color: var(--muted); }
+  .eq-t b { font-size: clamp(18px, 7cqh, 40px); font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .eq-t b small { font-size: .55em; font-weight: 700; color: var(--muted); margin-left: 2px; }
+  .eq-t em { font-style: normal; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .eq-t.warn { border-color: var(--warn); box-shadow: inset 0 0 0 2px var(--warn); }
+  .eq-t.crit { border-color: var(--crit); box-shadow: inset 0 0 0 2px var(--crit); }
+  .eq-t.warn svg { color: var(--warn); }
+  .eq-t.crit svg { color: var(--crit); }
+  .eq-dib { min-width: 0; min-height: 0; display: grid; place-items: center; position: relative; z-index: 1; }
+  .eq-dib > svg { width: 100%; height: 100%; max-height: 100%; overflow: visible; }
+  .eq-dib [data-eqh] { cursor: pointer; }
+  .eq-punto { fill: #f0a830; stroke: #8a5a12; stroke-width: 1.5; transition: fill .4s; }
+  .eq-punto.warn { fill: var(--warn); }
+  .eq-punto.crit { fill: var(--crit); stroke: #6d1410; }
+  .eq-punto.crit { animation: eqLatido 1.2s ease-in-out infinite; }
+  @keyframes eqLatido { 50% { opacity: .45; } }
+  @media (prefers-reduced-motion: reduce) { .eq-punto.crit { animation: none; } }
+  .eq-lineas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: visible; }
+  .eq-lineas line { stroke: #c9963f; stroke-width: 1.5; opacity: .85; }
+  .eq-lineas circle { fill: #c9963f; }
+  .eq-pantalla { fill: #26302a; }
+  html[data-mode="noche"] .eq-cuerpo { fill: #2f6d25; }
+  /* Chico: sin dibujo, solo los valores en grilla */
+  @container (max-width: 560px), (max-height: 250px) {
+    .eq { grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; }
+    .eq-dib, .eq-lineas { display: none; }
+    .eq-col { display: contents; }
+    .eq-t { grid-template-columns: auto minmax(0, 1fr); justify-items: start; text-align: left; column-gap: 8px; padding: 4px 8px; gap: 0 8px; }
+    .eq-t svg { grid-row: 1 / 3; width: 20px; height: 20px; }
+    .eq-t b { font-size: 20px; }
+  }
+  @container (max-height: 250px) and (min-width: 520px) { .eq { grid-template-columns: repeat(4, 1fr); } }
+  @container (max-height: 130px) { .eq-t em { display: none; } }
+  @container (max-width: 300px) { .eq { grid-template-columns: 1fr; } .eq-t em { display: none; } }
+
   /* Caja de apps (Menú), como el menú de la G5 */
   .menu { grid-row: 3; display: grid; grid-template-columns: 250px 1fr; min-height: 0; position: relative; }
   .menu[hidden], .run[hidden] { display: none !important; }
@@ -587,9 +644,19 @@
     <button type="button" id="addBtn" aria-expanded="false" aria-controls="trayItems">+ Agregar panel</button>
     <button type="button" id="newPage">+ Nueva Run Page</button>
     <button type="button" id="delPage" class="danger">Borrar esta Run Page</button>
+    <button type="button" id="vidrioBtn" aria-expanded="false" aria-controls="vidrioCaja">Transparencia</button>
     <button type="button" id="reset">Volver al original</button>
     <button type="button" class="done" id="done">Listo</button>
     <div class="tray-lista" id="trayItems" hidden></div>
+    <div class="tray-lista vidrio-caja" id="vidrioCaja" hidden>
+      <label for="vidrioRango"><span>Transparencia de los paneles</span><b id="vidrioTxt">14 %</b></label>
+      <input type="range" id="vidrioRango" min="0" max="90" step="1" value="14">
+      <div class="fila-chips">
+        <button type="button" data-vidrio="0">Opaco</button><button type="button" data-vidrio="14">Original</button>
+        <button type="button" data-vidrio="30">30 %</button><button type="button" data-vidrio="50">50 %</button><button type="button" data-vidrio="70">70 %</button>
+      </div>
+      <small>Se ve al instante; probá hasta que te guste. Se guarda solo.</small>
+    </div>
   </div>
 
   <div class="pagebar" id="pagebar">
@@ -682,7 +749,58 @@
     mudo: '<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/>'
   };
   const svgIco = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">${ICONOS_PANEL[k]}</svg>`;
+  const EQ_IC = {
+    brillo: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
+    ram: '<rect x="2" y="7" width="20" height="10" rx="1"/><path d="M6 17v3M10 17v3M14 17v3M18 17v3M6 10v4M10 10v4M14 10v4M18 10v4"/>',
+    vol: '<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9a4 4 0 0 1 0 6M19.5 6.5a8 8 0 0 1 0 11"/>',
+    bat: '<rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2M6 10v4M9.5 10v4"/>',
+    temp: '<path d="M14 14.8V4a2 2 0 1 0-4 0v10.8a4 4 0 1 0 4 0z"/><path d="M12 9v7"/>',
+    cpu: '<rect x="6" y="6" width="12" height="12" rx="1"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
+    fan: '<circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7 2 0 3 2 1 4l-3 3M14 12c4 0 7 1 7 4 0 2-2 3-4 1l-3-3M12 14c0 4-1 7-4 7-2 0-3-2-1-4l3-3M10 12c-4 0-7-1-7-4 0-2 2-3 4-1l3 3"/>',
+    disco: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M12 12l5 5"/>'
+  };
+  // Cada valor: dónde va su punto en el dibujo (x, y) y qué menú abre al tocarlo
+  const EQ = [
+    { p: "brillo", lado: 0, x: 108, y: 58,  hoja: "bright", nom: "Brillo", u: "%" },
+    { p: "ram",    lado: 0, x: 122, y: 170, hoja: "ram",    nom: "Memoria", u: "GB" },
+    { p: "vol",    lado: 0, x: 48,  y: 186, hoja: "vol",    nom: "Volumen", u: "%" },
+    { p: "bat",    lado: 0, x: 96,  y: 205, hoja: "bat",    nom: "Batería", u: "%" },
+    { p: "temp",   lado: 1, x: 206, y: 158, hoja: "temp",   nom: "Temperatura", u: "°C" },
+    { p: "cpu",    lado: 1, x: 176, y: 170, hoja: "cpu",    nom: "Procesador", u: "%" },
+    { p: "fan",    lado: 1, x: 272, y: 182, hoja: "temp",   nom: "Ventilador", u: "rpm" },
+    { p: "disco",  lado: 1, x: 226, y: 205, hoja: "disk",   nom: "Disco", u: "%" }
+  ];
+  const eqTile = (e) => `<button type="button" class="eq-t" data-eqh="${e.hoja}" data-eqp="${e.p}" aria-label="${e.nom}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${EQ_IC[e.p]}</svg>
+      <b><span id="eq_${e.p}">—</span><small>${e.u}</small></b><em id="eqs_${e.p}">${e.nom}</em></button>`;
+  // La compu dibujada al estilo del monitor: verde con filete amarillo, la pantalla con su barrita verde
+  const EQ_DIBUJO = `<svg viewBox="0 0 320 230" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <rect x="62" y="8" width="196" height="132" rx="8" fill="#1d1f1c"/>
+      <rect class="eq-pantalla" x="70" y="16" width="180" height="114" rx="2"/>
+      <rect x="70" y="16" width="180" height="15" fill="#367c2b"/><rect x="214" y="16" width="36" height="15" fill="#1d5a1c"/>
+      <g fill="#eceeea" opacity=".9"><rect x="76" y="37" width="52" height="40" rx="2"/><rect x="132" y="37" width="52" height="40" rx="2"/>
+        <rect x="188" y="37" width="56" height="86" rx="2"/><rect x="76" y="81" width="108" height="42" rx="2"/></g>
+      <path d="M80 70l10-12 9 6 12-15 12 9" fill="none" stroke="#5ea23a" stroke-width="2.5"/>
+      <rect x="140" y="62" width="36" height="8" fill="#5ea23a"/><rect x="88" y="98" width="70" height="8" fill="#d9ded9"/><rect x="88" y="98" width="44" height="8" fill="#ffde00"/>
+      <rect x="140" y="138" width="40" height="6" rx="2" fill="#141513"/>
+      <path class="eq-cuerpo" d="M44 146h232l36 56H8z" fill="#367c2b"/>
+      <path d="M8 202h304v10a6 6 0 0 1-6 6H14a6 6 0 0 1-6-6z" fill="#1d5a1c"/>
+      <path d="M10 205h300" stroke="#ffde00" stroke-width="3"/>
+      <path d="M70 152h180l14 24H56z" fill="#1d5a1c"/>
+      <g stroke="#2f6d25" stroke-width="1.2">${[157, 163, 169].map((y, i) => `<path d="M${68 - i * 3.5} ${y}h${184 + i * 7}"/>`).join("")}
+        ${Array.from({ length: 13 }, (_, i) => `<path d="M${76 + i * 14} 153l${-3 + i * .5} 22"/>`).join("")}</g>
+      <rect x="128" y="182" width="64" height="16" rx="3" fill="#2f6d25" stroke="#1d5a1c"/>
+      <g fill="#1d5a1c">${Array.from({ length: 4 }, (_, i) => `<circle cx="${34 + i * 6}" cy="190" r="1.6"/><circle cx="${37 + i * 6}" cy="195" r="1.6"/>`).join("")}</g>
+      <g stroke="#1d5a1c" stroke-width="2.2" stroke-linecap="round">${Array.from({ length: 5 }, (_, i) => `<path d="M${262 + i * 5} 172l6 16"/>`).join("")}</g>
+      ${EQ.map(e => `<g data-eqh="${e.hoja}"><circle cx="${e.x}" cy="${e.y}" r="16" fill="transparent"/>
+        <circle class="eq-punto" data-eqd="${e.p}" cx="${e.x}" cy="${e.y}" r="7"/></g>`).join("")}
+    </svg>`;
   const MODS = {
+    equipo: { name: "Equipo", title: "Equipo · todo de un vistazo", grande: true, html: `<div class="eq">
+               <svg class="eq-lineas" aria-hidden="true"></svg>
+               <div class="eq-col">${EQ.filter(e => !e.lado).map(eqTile).join("")}</div>
+               <div class="eq-dib">${EQ_DIBUJO}</div>
+               <div class="eq-col">${EQ.filter(e => e.lado).map(eqTile).join("")}</div></div>` },
     cpu:    { name: "Procesador", html: `<div class="big"><span id="cpu">—</span><small>%</small></div><div class="gauge"><i id="cpuG"></i></div><div class="sub" id="cpuSub">—</div>
              <div class="det">${linea("cpuLine", "cpuFill")}
                <div class="fila"><span>Frecuencia</span><b id="cpuGhz">—</b></div>
@@ -1086,6 +1204,7 @@
     cargarArchivos();
     tickReloj();
     medirLienzo();
+    eqMedida = "";
     if (ultimo) pintar(ultimo);
   }
   // La bandeja de edición tapa la barra de abajo, así que el lienzo mide lo mismo editando o no
@@ -1325,12 +1444,33 @@
   function listaPaneles(abrir) {
     $("trayItems").hidden = !abrir;
     $("addBtn").setAttribute("aria-expanded", String(abrir));
+    if (abrir) cajaVidrio(false);
   }
+  /* Transparencia de los paneles: 0 = opaco, 90 = casi invisible */
+  let vidrio = 14, vidrioTimer = null;
+  function ponerVidrio(v, save) {
+    vidrio = Math.max(0, Math.min(90, Math.round(v)));
+    document.documentElement.style.setProperty("--opac", String(1 - vidrio / 100));
+    $("vidrioRango").value = vidrio;
+    set("vidrioTxt", vidrio + " %");
+    if (save) { clearTimeout(vidrioTimer); vidrioTimer = setTimeout(() => api("/api/estado", { vidrio }).catch(() => {}), 400); }
+  }
+  function cajaVidrio(abrir) {
+    $("vidrioCaja").hidden = !abrir;
+    $("vidrioBtn").setAttribute("aria-expanded", String(abrir));
+    if (abrir) { $("trayItems").hidden = true; $("addBtn").setAttribute("aria-expanded", "false"); }
+  }
+  $("vidrioBtn").addEventListener("click", () => cajaVidrio($("vidrioCaja").hidden));
+  $("vidrioRango").addEventListener("input", (e) => ponerVidrio(Number(e.target.value), true));
+  $("vidrioCaja").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-vidrio]"); if (b) ponerVidrio(Number(b.dataset.vidrio), true);
+  });
   $("addBtn").addEventListener("click", () => listaPaneles($("trayItems").hidden));
   $("trayItems").addEventListener("click", (e) => {
     const b = e.target.closest("[data-add]"); if (!b) return;
     const { W, H } = lienzoTam();
-    const r = lugarLibre(Math.max(MIN_W, W / 4 - 0.012 * W), Math.max(MIN_H, H / 3 - 0.02 * H), W, H) || lugarLibre(MIN_W, MIN_H, W, H);
+    const r = (MODS[b.dataset.add].grande && lugarLibre(W / 2 - 0.012 * W, 2 * H / 3 - 0.02 * H, W, H))
+      || lugarLibre(Math.max(MIN_W, W / 4 - 0.012 * W), Math.max(MIN_H, H / 3 - 0.02 * H), W, H) || lugarLibre(MIN_W, MIN_H, W, H);
     if (!r) {
       b.textContent = "No hay lugar: achicá o sacá un panel";
       setTimeout(() => { b.textContent = "+ " + MODS[b.dataset.add].name; }, 2500);
@@ -1360,7 +1500,7 @@
     $("editBtn").classList.toggle("active", on);
     if (vista === "menu") { renderTiles(); return; }
     $("tray").hidden = !on;
-    listaPaneles(false);
+    listaPaneles(false); cajaVidrio(false);
     $("modules").classList.toggle("editing", on);
     desarmarBorrar();
     renderModules();
@@ -1886,6 +2026,7 @@
 
     temp: { tit: "Temperatura", extra: true, vivo: (d, x) => `<div class="hoja-grande"><b>${d.temp ?? "—"}<small>°C</small></b><span>Procesador · últimos 2 minutos</span></div>
         ${linea("hTempLine", "hTempFill")}<div class="sub">De 30 a 90 °C. Más de 80 °C es zona de alerta.</div>
+        ${d.ventilador ? `<div class="det">${fil("Ventilador", d.ventilador.rpm ? `${d.ventilador.rpm.toLocaleString("es-UY")} rpm` : "Quieto")}</div>` : ""}
         <h4>Todos los sensores</h4>${!x.sensores ? cargando : `<div class="hoja-lista">${x.sensores.map(s => fil(esc(s.nombre),
           `<span class="etq ${s.c >= 85 ? "crit" : s.c >= 70 ? "warn" : "ok"}">${s.c} °C</span>`)).join("")}</div>`}
         <div class="hoja-botones">${monitor}</div>`,
@@ -2312,6 +2453,7 @@
       const html = btFilas(bt);
       if (lista.dataset.html !== html) { lista.dataset.html = html; lista.innerHTML = html; }
     }
+    pintarEquipo(d);
     pintarHoja(d);
 
     // Estado general
@@ -2329,6 +2471,81 @@
     drawSpark();
     medirLienzo();   // si con los datos nuevos algo ya no entra, el panel pasa a un tamaño más chico
   }
+
+  /* Equipo: valores, colores de alerta y líneas de cada punto a su recuadro */
+  function pintarEquipo(d) {
+    if (!$("eq_cpu")) return;
+    const b = d.bateria, f = d.ventilador;
+    const est = (p, v, txt, nivel, sub) => {
+      set("eq_" + p, v == null ? "—" : txt ?? v);
+      document.querySelectorAll(`[data-eqp="${p}"], [data-eqd="${p}"]`).forEach(el => {
+        el.classList.toggle("warn", nivel === "warn"); el.classList.toggle("crit", nivel === "crit");
+      });
+      if (sub) set("eqs_" + p, sub);
+    };
+    const nv = (v, w, c) => v == null ? "" : v >= c ? "crit" : v >= w ? "warn" : "";
+    est("cpu", d.cpu, null, nv(d.cpu, 70, 90), d.cpu_det && d.cpu_det.ghz ? `Procesador · ${d.cpu_det.ghz.toFixed(1)} GHz` : "Procesador");
+    est("temp", d.temp, null, nv(d.temp, 80, 85), d.temp_gpu != null ? `Video ${d.temp_gpu} °C · SSD ${d.temp_disco ?? "—"} °C` : "Procesador");
+    est("fan", f ? f.rpm : null, f ? f.rpm.toLocaleString("es-UY") : null, "", f ? (f.rpm ? "Ventilador girando" : "Ventilador quieto") : "Sin dato");
+    const ramP = 100 * d.ram / d.ram_total;
+    est("ram", d.ram, null, nv(ramP, 75, 90), `Memoria de ${d.ram_total} GB`);
+    est("disco", d.disco.pct, null, nv(d.disco.pct, 80, 92), `Disco · ${d.disco.libre} GB libres`);
+    if (b) est("bat", b.pct, null, b.estado === "Discharging" ? (b.pct <= 12 ? "crit" : b.pct <= 25 ? "warn" : "") : "",
+      ({ Discharging: "Batería · descargando", Charging: "Batería · cargando", Full: "Batería · llena", "Not charging": "Batería · enchufada" })[b.estado] || "Batería");
+    else est("bat", null, null, "", "Sin batería");
+    if (!eqTocando) {
+      est("brillo", d.brillo, null, "", "Brillo de pantalla");
+      est("vol", d.volumen.pct, d.volumen.mudo ? "Mudo" : null, "", d.volumen.mudo ? "Volumen · silenciado" : "Volumen");
+      document.querySelector('[data-eqp="vol"] b small').hidden = !!d.volumen.mudo;
+    }
+    eqLineas();
+  }
+  let eqMedida = "";
+  function eqLineas() {
+    const caja = document.querySelector(".eq"); if (!caja) return;
+    const svg = caja.querySelector(".eq-lineas"), dib = caja.querySelector(".eq-dib");
+    const R = caja.getBoundingClientRect(), k = R.width / (caja.offsetWidth || 1);
+    if (!dib.offsetWidth || !k) { svg.innerHTML = ""; return; }
+    const pos = [...caja.querySelectorAll(".eq-t, .eq-punto")].map(el => { const r = el.getBoundingClientRect(); return [r.x, r.y, r.width, r.height].map(Math.round).join(","); }).join(";");
+    const medida = `${R.x},${R.y},${R.width},${R.height}|${pos}`;
+    if (medida === eqMedida) return;
+    eqMedida = medida;
+    const rel = (x, y) => [((x - R.left) / k).toFixed(1), ((y - R.top) / k).toFixed(1)];
+    svg.setAttribute("viewBox", `0 0 ${caja.offsetWidth} ${caja.offsetHeight}`);
+    svg.innerHTML = EQ.map(e => {
+      const t = caja.querySelector(`.eq-t[data-eqp="${e.p}"]`).getBoundingClientRect();
+      const p = caja.querySelector(`[data-eqd="${e.p}"]`).getBoundingClientRect();
+      const [x1, y1] = rel(e.lado ? t.left : t.right, t.top + t.height / 2);
+      const [x2, y2] = rel(p.left + p.width / 2, p.top + p.height / 2);
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><circle cx="${x1}" cy="${y1}" r="3"/>`;
+    }).join("");
+  }
+  if (window.ResizeObserver) new ResizeObserver(() => { eqMedida = ""; eqLineas(); }).observe($("modules"));
+  // Tocar un recuadro o un punto abre el menú de esa parte
+  $("modules").addEventListener("click", (e) => {
+    const t = e.target.closest("[data-eqh]");
+    if (!t || editing || performance.now() - deslizado < 400) return;
+    abrirHoja(t.dataset.eqh);
+  });
+  // Rueda del mouse sobre brillo o volumen: sube o baja de a 5
+  let eqTocando = false, eqTimer = null;
+  $("modules").addEventListener("wheel", (e) => {
+    const t = e.target.closest('.eq-t[data-eqp="brillo"], .eq-t[data-eqp="vol"]');
+    if (!t || editing || !ultimo || Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
+    e.preventDefault();
+    const brillo = t.dataset.eqp === "brillo";
+    const el = $(brillo ? "eq_brillo" : "eq_vol");
+    const antes = Number(el.textContent);
+    const base = Number.isFinite(antes) ? antes : brillo ? ultimo.brillo : ultimo.volumen.pct;
+    if (base == null) return;
+    const v = Math.max(brillo ? 1 : 0, Math.min(100, base + (e.deltaY < 0 ? 5 : -5)));
+    el.textContent = v; eqTocando = true;
+    clearTimeout(eqTimer);
+    eqTimer = setTimeout(() => {
+      (brillo ? api("/api/hoja", { k: "bright", que: "poner", pct: v }) : api("/api/musica", { accion: "volumen", pct: v }))
+        .catch(() => {}).finally(() => setTimeout(() => { eqTocando = false; }, 1500));
+    }, 150);
+  }, { passive: false });
 
   function actualizar() {
     api("/api/datos").then(d => {
@@ -2362,6 +2579,7 @@
     }
     setMode(e.modo === "noche" ? "noche" : "dia", false);
     if (typeof e.sonido === "boolean") sonido = e.sonido;
+    if (Number.isInteger(e.vidrio)) ponerVidrio(e.vidrio, false);
     if (typeof e.notas === "string") notasTexto = e.notas;
     if (Array.isArray(e.favoritas)) favoritas = e.favoritas.filter(x => typeof x === "string");
   }).catch(() => setMode("dia", false)).finally(() => {

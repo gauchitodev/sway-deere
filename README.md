@@ -57,6 +57,12 @@ Pantalla de login (opcional) para compus con dos usuarios: cada uno de un lado d
     **Bluetooth** (prender/apagar, conectar tus aparatos, ver su batería y vincular nuevos), disco, reloj,
     **música** (lo que suena en YouTube / YouTube Music, con barra para adelantar, volumen y la portada de fondo),
     mapa, últimos videos de YouTube, notas y el estado de los bots que corren en otros equipos por SSH.
+  - **Equipo**, el panel grande inspirado en "Config de cosecha" del monitor: la compu dibujada al medio,
+    con un punto naranja sobre cada parte y una línea a su valor (brillo, memoria, volumen, batería,
+    temperatura, procesador, ventilador y disco). Tocar un valor o un punto abre su menú; con la rueda del
+    mouse sobre brillo o volumen se suben o bajan. En chico queda solo la grilla de valores.
+  - **Transparencia a gusto**: en **Editar → Transparencia** elegís cuánto se ve el fondo a través de los
+    paneles, de opaco a casi invisible. Se ve al instante y queda guardada.
   - **Cada panel es un botón**: tocarlo abre su menú con más datos y acciones. Procesador y memoria: los
     programas que más usan. Wifi: redes cerca, conectar y desconectar. Disco: qué carpetas ocupan más y
     vaciar la papelera. Ventanas: ir a una o cerrarla. Brillo y volumen: deslizador y por dónde sale el
@@ -131,6 +137,7 @@ Se puede correr las veces que quieras.
 | Mover un panel | **Editar** y arrastrarlo |
 | Agrandar o achicar un panel | **Editar** y tirar de la esquina amarilla de abajo a la derecha |
 | Agregar o quitar paneles | **Editar** → **+ Agregar panel**, o la ✕ roja de cada panel |
+| Cambiar la transparencia de los paneles | **Editar** → **Transparencia** |
 | Buscar y vincular un parlante | tocar el panel de **Bluetooth** (se abre su menú, aunque el panel sea chico) |
 | Revisar un bot, entrar por SSH o cambiarle la IP | tocar el panel de ese **bot** |
 | Ver más de cualquier panel o hacer algo con él | tocarlo (fuera de sus botones) |
