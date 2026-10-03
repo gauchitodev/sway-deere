@@ -15,16 +15,22 @@ pantalla táctil.
 
 ![Run Page en modo noche](capturas/1-pagina-de-trabajo.png)
 
+Run Page 1 en modo noche: el panel **Equipo** con la compu y sus valores alrededor, música, Bluetooth, datos usados, wifi y disco.
+
 | | |
 |---|---|
-| ![Reloj, música, notas, mapa y YouTube](capturas/2-reloj-musica-mapa-youtube.png) | ![Menú de apps](capturas/3-menu-de-apps.png) |
-| Segunda Run Page: reloj, música, notas, mapa y últimos videos | Menú de apps estilo G5 |
+| ![Reloj, música, clima, notas, mapa y bot](capturas/2-reloj-musica-clima-mapa.png) | ![Menú de apps](capturas/3-menu-de-apps.png) |
+| Segunda Run Page: reloj, música, clima, notas, mapa y el estado del bot | Menú de apps estilo G5 |
 | ![Modo día](capturas/4-modo-dia.png) | ![Panel de Bluetooth](capturas/5-bluetooth.png) |
 | Modo día | Panel de Bluetooth: prender, conectar y vincular con el dedo |
 
+![Paneles de Operations Center y Deere Files](capturas/8-deere.png)
+
+Tercera Run Page: resumen de la flota de Operations Center y los archivos de Deere Files (datos de ejemplo).
+
 ![Pantalla de bloqueo](capturas/6-bloqueo.png)
 
-Pantalla de bloqueo (al suspender o con `Super+Shift+X`): la cosechadora de fondo y el círculo en verde G5.
+Pantalla de bloqueo (al suspender o con `Super+Shift+X`): la cosechadora de fondo y el círculo oscuro con el aro verde G5.
 
 ![Pantalla de login](capturas/7-seleccion-de-usuario.png)
 
