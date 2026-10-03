@@ -57,8 +57,8 @@ Pantalla de login (opcional) para compus con dos usuarios: cada uno de un lado d
     **Bluetooth** (prender/apagar, conectar tus aparatos, ver su batería y vincular nuevos), disco, reloj,
     **música** (lo que suena en YouTube / YouTube Music, con barra para adelantar, volumen y la portada de fondo),
     mapa, últimos videos de YouTube, notas y el estado de los bots que corren en otros equipos por SSH.
-  - **Equipo**, el panel grande inspirado en "Config de cosecha" del monitor: la compu dibujada al medio,
-    con un punto naranja sobre cada parte y una línea a su valor (brillo, memoria, volumen, batería,
+  - **Equipo**, el panel grande inspirado en "Config de cosecha" del monitor: una notebook verde dibujada al medio,
+    con un punto naranja sobre cada parte y una línea (que nunca se cruza con otra) a su valor (brillo, memoria, volumen, batería,
     temperatura, procesador, ventilador y disco). Tocar un valor o un punto abre su menú; con la rueda del
     mouse sobre brillo o volumen se suben o bajan. En chico queda solo la grilla de valores.
   - **Transparencia a gusto**: en **Editar → Transparencia** elegís cuánto se ve el fondo a través de los

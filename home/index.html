@@ -437,11 +437,10 @@
   .eq-punto.crit { animation: eqLatido 1.2s ease-in-out infinite; }
   @keyframes eqLatido { 50% { opacity: .45; } }
   @media (prefers-reduced-motion: reduce) { .eq-punto.crit { animation: none; } }
-  .eq-lineas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: visible; }
+  /* Las líneas van por encima del dibujo, como en el monitor; los puntos se vuelven a pintar arriba de ellas */
+  .eq-lineas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; overflow: visible; }
   .eq-lineas line { stroke: #c9963f; stroke-width: 1.5; opacity: .85; }
-  .eq-lineas circle { fill: #c9963f; }
-  .eq-pantalla { fill: #26302a; }
-  html[data-mode="noche"] .eq-cuerpo { fill: #2f6d25; }
+  .eq-lineas circle.cabo { fill: #c9963f; }
   /* Chico: sin dibujo, solo los valores en grilla */
   @container (max-width: 560px), (max-height: 250px) {
     .eq { grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; }
@@ -759,48 +758,105 @@
     fan: '<circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7 2 0 3 2 1 4l-3 3M14 12c4 0 7 1 7 4 0 2-2 3-4 1l-3-3M12 14c0 4-1 7-4 7-2 0-3-2-1-4l3-3M10 12c-4 0-7-1-7-4 0-2 2-3 4-1l3 3"/>',
     disco: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M12 12l5 5"/>'
   };
-  // Cada valor: dónde va su punto en el dibujo (x, y) y qué menú abre al tocarlo
+  // Cada valor y qué menú abre al tocarlo; dónde va su punto lo dice cada dibujo
   const EQ = [
-    { p: "brillo", lado: 0, x: 108, y: 58,  hoja: "bright", nom: "Brillo", u: "%" },
-    { p: "ram",    lado: 0, x: 122, y: 170, hoja: "ram",    nom: "Memoria", u: "GB" },
-    { p: "vol",    lado: 0, x: 48,  y: 186, hoja: "vol",    nom: "Volumen", u: "%" },
-    { p: "bat",    lado: 0, x: 96,  y: 205, hoja: "bat",    nom: "Batería", u: "%" },
-    { p: "temp",   lado: 1, x: 206, y: 158, hoja: "temp",   nom: "Temperatura", u: "°C" },
-    { p: "cpu",    lado: 1, x: 176, y: 170, hoja: "cpu",    nom: "Procesador", u: "%" },
-    { p: "fan",    lado: 1, x: 272, y: 182, hoja: "temp",   nom: "Ventilador", u: "rpm" },
-    { p: "disco",  lado: 1, x: 226, y: 205, hoja: "disk",   nom: "Disco", u: "%" }
+    { p: "brillo", hoja: "bright", nom: "Brillo", u: "%" },
+    { p: "ram",    hoja: "ram",    nom: "Memoria", u: "GB" },
+    { p: "vol",    hoja: "vol",    nom: "Volumen", u: "%" },
+    { p: "bat",    hoja: "bat",    nom: "Batería", u: "%" },
+    { p: "temp",   hoja: "temp",   nom: "Temperatura", u: "°C" },
+    { p: "cpu",    hoja: "cpu",    nom: "Procesador", u: "%" },
+    { p: "fan",    hoja: "temp",   nom: "Ventilador", u: "rpm" },
+    { p: "disco",  hoja: "disk",   nom: "Disco", u: "%" }
   ];
   const eqTile = (e) => `<button type="button" class="eq-t" data-eqh="${e.hoja}" data-eqp="${e.p}" aria-label="${e.nom}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${EQ_IC[e.p]}</svg>
       <b><span id="eq_${e.p}">—</span><small>${e.u}</small></b><em id="eqs_${e.p}">${e.nom}</em></button>`;
-  // La compu dibujada al estilo del monitor: verde con filete amarillo, la pantalla con su barrita verde
-  const EQ_DIBUJO = `<svg viewBox="0 0 320 230" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-      <rect x="62" y="8" width="196" height="132" rx="8" fill="#1d1f1c"/>
-      <rect class="eq-pantalla" x="70" y="16" width="180" height="114" rx="2"/>
-      <rect x="70" y="16" width="180" height="15" fill="#367c2b"/><rect x="214" y="16" width="36" height="15" fill="#1d5a1c"/>
-      <g fill="#eceeea" opacity=".9"><rect x="76" y="37" width="52" height="40" rx="2"/><rect x="132" y="37" width="52" height="40" rx="2"/>
-        <rect x="188" y="37" width="56" height="86" rx="2"/><rect x="76" y="81" width="108" height="42" rx="2"/></g>
-      <path d="M80 70l10-12 9 6 12-15 12 9" fill="none" stroke="#5ea23a" stroke-width="2.5"/>
-      <rect x="140" y="62" width="36" height="8" fill="#5ea23a"/><rect x="88" y="98" width="70" height="8" fill="#d9ded9"/><rect x="88" y="98" width="44" height="8" fill="#ffde00"/>
-      <rect x="140" y="138" width="40" height="6" rx="2" fill="#141513"/>
-      <path class="eq-cuerpo" d="M44 146h232l36 56H8z" fill="#367c2b"/>
-      <path d="M8 202h304v10a6 6 0 0 1-6 6H14a6 6 0 0 1-6-6z" fill="#1d5a1c"/>
-      <path d="M10 205h300" stroke="#ffde00" stroke-width="3"/>
-      <path d="M70 152h180l14 24H56z" fill="#1d5a1c"/>
-      <g stroke="#2f6d25" stroke-width="1.2">${[157, 163, 169].map((y, i) => `<path d="M${68 - i * 3.5} ${y}h${184 + i * 7}"/>`).join("")}
-        ${Array.from({ length: 13 }, (_, i) => `<path d="M${76 + i * 14} 153l${-3 + i * .5} 22"/>`).join("")}</g>
-      <rect x="128" y="182" width="64" height="16" rx="3" fill="#2f6d25" stroke="#1d5a1c"/>
-      <g fill="#1d5a1c">${Array.from({ length: 4 }, (_, i) => `<circle cx="${34 + i * 6}" cy="190" r="1.6"/><circle cx="${37 + i * 6}" cy="195" r="1.6"/>`).join("")}</g>
-      <g stroke="#1d5a1c" stroke-width="2.2" stroke-linecap="round">${Array.from({ length: 5 }, (_, i) => `<path d="M${262 + i * 5} 172l6 16"/>`).join("")}</g>
-      ${EQ.map(e => `<g data-eqh="${e.hoja}"><circle cx="${e.x}" cy="${e.y}" r="16" fill="transparent"/>
-        <circle class="eq-punto" data-eqd="${e.p}" cx="${e.x}" cy="${e.y}" r="7"/></g>`).join("")}
+
+  /* Dibujos de la compu (lienzo de 320 × 230). Cada uno da su SVG y dónde cae el punto de cada parte. */
+  const rango = (n, f) => Array.from({ length: n }, (_, i) => f(i)).join("");
+  // Plano inclinado: lleva un rectángulo de W × H a un paralelogramo (origen o, lados u y v)
+  const plano = (o, u, v, W, H) => ({
+    m: `matrix(${u[0] / W} ${u[1] / W} ${v[0] / H} ${v[1] / H} ${o[0]} ${o[1]})`,
+    p: (x, y) => [o[0] + u[0] * x / W + v[0] * y / H, o[1] + u[1] * x / W + v[1] * y / H].map(n => Math.round(n))
+  });
+  // La pantalla prendida con una Run Page en miniatura (100 × 60)
+  const MINI_G5 = `<rect width="100" height="60" fill="#18201a"/><rect width="100" height="7" fill="#367c2b"/><rect x="80" width="20" height="7" fill="#1d5a1c"/>
+    <g fill="#e8ebe6"><rect x="3" y="10" width="30" height="22" rx="1"/><rect x="36" y="10" width="30" height="22" rx="1"/><rect x="69" y="10" width="28" height="47" rx="1"/><rect x="3" y="35" width="63" height="22" rx="1"/></g>
+    <path d="M6 27l6-7 5 3 6-8 7 5" fill="none" stroke="#5ea23a" stroke-width="1.6"/><rect x="40" y="22" width="20" height="4" fill="#5ea23a"/>
+    <rect x="8" y="44" width="50" height="4" fill="#d9ded9"/><rect x="8" y="44" width="32" height="4" fill="#ffde00"/>
+    <g fill="#5ea23a">${rango(5, i => `<rect x="${73 + i * 4.6}" y="${50 - i * 6}" width="3" height="${4 + i * 6}"/>`)}</g>`;
+  // Notebook verde John Deere en tres cuartos, con proporciones de una de 14": tapa 16:10 del ancho de la base
+  function dibujoNotebook() {
+    const D = [122, 121], u = [170, 49], v = [-104, 45], w = [15, -112], G = 5;   // G: espesor del cuerpo
+    const suma = (...ps) => ps.reduce((a, p) => [a[0] + p[0], a[1] + p[1]], [0, 0]);
+    const C = suma(D, u), A = suma(D, v), B = suma(D, u, v), Dt = suma(D, w), Ct = suma(D, u, w);
+    const pt = (p) => p.map(n => n.toFixed(1)).join(" ");
+    const base = plano(D, u, v, 100, 60), tapa = plano(Dt, u, [-w[0], -w[1]], 100, 62.5);
+    const filas = [5.2, 4.6, 4.6, 4.6, 4.6, 4.6], anchos = [16, 15, 15, 14, 13, 0];
+    let y = 7, teclas = "";
+    filas.forEach((alto, r) => {
+      const n = anchos[r];
+      if (n) teclas += rango(n, c => `<rect x="${(11 + c * 78 / n).toFixed(2)}" y="${y.toFixed(2)}" width="${(78 / n - 0.9).toFixed(2)}" height="${(alto - 0.9).toFixed(2)}" rx=".5"/>`);
+      else teclas += `<rect x="11" y="${y}" width="9" height="${alto - .9}" rx=".5"/><rect x="21" y="${y}" width="9" height="${alto - .9}" rx=".5"/>
+        <rect x="31" y="${y}" width="36" height="${alto - .9}" rx=".5"/><rect x="68" y="${y}" width="9" height="${alto - .9}" rx=".5"/><rect x="78" y="${y}" width="11" height="${alto - .9}" rx=".5"/>`;
+      y += alto;
+    });
+    const svg = `<defs>
+        <linearGradient id="nbBase" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a8c3a"/><stop offset="1" stop-color="#3a7a2e"/></linearGradient>
+        <linearGradient id="nbBrillo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".13"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
+        <radialGradient id="nbSombra"><stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
+      <ellipse cx="${(A[0] + C[0]) / 2 + 6}" cy="${B[1] - 22}" rx="165" ry="40" fill="url(#nbSombra)"/>
+      <path d="M${pt(A)}L${pt(B)}L${pt(C)}L${pt([C[0], C[1] + G])}L${pt([B[0], B[1] + G])}L${pt([A[0], A[1] + G])}Z" fill="#1f4f1a"/>
+      <path d="M${pt(B)}L${pt(C)}L${pt([C[0], C[1] + G])}L${pt([B[0], B[1] + G])}Z" fill="#2a6322"/>
+      <path d="M${pt([A[0] + 1, A[1] + 3.2])}L${pt([B[0], B[1] + 3.2])}" stroke="#ffde00" stroke-width="1.3"/>
+      <g transform="${base.m}"><rect width="100" height="60" rx="2.5" fill="url(#nbBase)"/>
+        <rect x="9.5" y="5.5" width="81" height="30.5" rx="1.5" fill="#24561d"/><g fill="#2e6a26">${teclas}</g>
+        <rect x="33" y="40" width="34" height="17" rx="1.5" fill="#438634" stroke="#5a9c48" stroke-width=".4"/>
+        <g fill="#2a5f22">${rango(14, i => `<rect x="3" y="${7 + i * 2.1}" width="4" height=".8" rx=".4"/><rect x="93" y="${7 + i * 2.1}" width="4" height=".8" rx=".4"/>`)}</g>
+        <rect x="0" y="0" width="100" height="1.6" fill="#1f4f1a"/></g>
+      <g stroke="#1f4f1a" stroke-width="1">${rango(6, i => `<path d="M${(C[0] - 3).toFixed(1)} ${(C[1] - 30 + i * 4).toFixed(1)}v0"/>`)}</g>
+      <path d="M${pt(D)}L${pt(Dt)}L${pt(Ct)}L${pt(C)}Z" fill="#191c1a"/>
+      <g transform="${tapa.m}"><g transform="translate(2.6 2.6) scale(.948 .917)">${MINI_G5}</g>
+        <rect width="100" height="62.5" fill="url(#nbBrillo)"/><circle cx="50" cy="1.3" r=".6" fill="#3a3f3c"/></g>
+      <path d="M${pt(D)}L${pt(C)}" stroke="#0f110f" stroke-width="2.2"/>`;
+    const pts = { brillo: tapa.p(28, 28), vol: base.p(5, 30), ram: base.p(30, 16), cpu: base.p(52, 14), temp: base.p(66, 10),
+                  fan: base.p(95, 12), bat: base.p(30, 50), disco: base.p(74, 50) };
+    return { svg, pts };
+  }
+  const EQ_D = dibujoNotebook();
+  // Los cuatro puntos más a la izquierda van a la columna izquierda. El orden de arriba a abajo es el
+  // que hace que las líneas no se crucen (y, entre los que empatan, el de líneas más cortas).
+  const eqOrden = EQ.slice().sort((a, b) => EQ_D.pts[a.p][0] - EQ_D.pts[b.p][0]);
+  const permutar = (l) => l.length < 2 ? [l] : l.flatMap((x, i) => permutar(l.filter((_, j) => j !== i)).map(r => [x, ...r]));
+  const cruzan = (a, b, c, d) => {
+    const lado = (p, q, r) => Math.sign((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]));
+    return lado(a, b, c) * lado(a, b, d) < 0 && lado(c, d, a) * lado(c, d, b) < 0;
+  };
+  function eqColumna(lista, x) {
+    let mejor = null, nota = Infinity;
+    permutar(lista).forEach(orden => {
+      const seg = orden.map((e, i) => [[x, 230 * (i + .5) / 4], EQ_D.pts[e.p]]);
+      let n = 0;
+      seg.forEach((s1, i) => seg.slice(i + 1).forEach(s2 => { if (cruzan(s1[0], s1[1], s2[0], s2[1])) n += 1e4; }));
+      seg.forEach(([a, b]) => { n += Math.hypot(a[0] - b[0], a[1] - b[1]); });
+      if (n < nota) { nota = n; mejor = orden; }
+    });
+    return mejor;
+  }
+  const eqIzq = eqColumna(eqOrden.slice(0, 4), -70);
+  const eqDer = eqColumna(eqOrden.slice(4), 390);
+  eqDer.forEach(e => { e.lado = 1; });
+  const EQ_DIBUJO = `<svg viewBox="0 0 320 230" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${EQ_D.svg}
+      ${EQ.map(e => { const [x, y] = EQ_D.pts[e.p]; return `<g data-eqh="${e.hoja}"><circle cx="${x}" cy="${y}" r="16" fill="transparent"/>
+        <circle class="eq-punto" data-eqd="${e.p}" cx="${x}" cy="${y}" r="7"/></g>`; }).join("")}
     </svg>`;
   const MODS = {
     equipo: { name: "Equipo", title: "Equipo · todo de un vistazo", grande: true, html: `<div class="eq">
                <svg class="eq-lineas" aria-hidden="true"></svg>
-               <div class="eq-col">${EQ.filter(e => !e.lado).map(eqTile).join("")}</div>
+               <div class="eq-col">${eqIzq.map(eqTile).join("")}</div>
                <div class="eq-dib">${EQ_DIBUJO}</div>
-               <div class="eq-col">${EQ.filter(e => e.lado).map(eqTile).join("")}</div></div>` },
+               <div class="eq-col">${eqDer.map(eqTile).join("")}</div></div>` },
     cpu:    { name: "Procesador", html: `<div class="big"><span id="cpu">—</span><small>%</small></div><div class="gauge"><i id="cpuG"></i></div><div class="sub" id="cpuSub">—</div>
              <div class="det">${linea("cpuLine", "cpuFill")}
                <div class="fila"><span>Frecuencia</span><b id="cpuGhz">—</b></div>
@@ -2506,7 +2562,7 @@
     const svg = caja.querySelector(".eq-lineas"), dib = caja.querySelector(".eq-dib");
     const R = caja.getBoundingClientRect(), k = R.width / (caja.offsetWidth || 1);
     if (!dib.offsetWidth || !k) { svg.innerHTML = ""; return; }
-    const pos = [...caja.querySelectorAll(".eq-t, .eq-punto")].map(el => { const r = el.getBoundingClientRect(); return [r.x, r.y, r.width, r.height].map(Math.round).join(","); }).join(";");
+    const pos = [...caja.querySelectorAll(".eq-t, .eq-dib .eq-punto")].map(el => { const r = el.getBoundingClientRect(); return [r.x, r.y, r.width, r.height].map(Math.round).join(",") + el.getAttribute("class"); }).join(";");
     const medida = `${R.x},${R.y},${R.width},${R.height}|${pos}`;
     if (medida === eqMedida) return;
     eqMedida = medida;
@@ -2517,7 +2573,9 @@
       const p = caja.querySelector(`[data-eqd="${e.p}"]`).getBoundingClientRect();
       const [x1, y1] = rel(e.lado ? t.left : t.right, t.top + t.height / 2);
       const [x2, y2] = rel(p.left + p.width / 2, p.top + p.height / 2);
-      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><circle cx="${x1}" cy="${y1}" r="3"/>`;
+      const pt = caja.querySelector(`[data-eqd="${e.p}"]`);
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><circle class="cabo" cx="${x1}" cy="${y1}" r="3"/>
+        <circle class="${pt.getAttribute("class")}" cx="${x2}" cy="${y2}" r="${(p.width / 2 / k).toFixed(1)}"/>`;
     }).join("");
   }
   if (window.ResizeObserver) new ResizeObserver(() => { eqMedida = ""; eqLineas(); }).observe($("modules"));
