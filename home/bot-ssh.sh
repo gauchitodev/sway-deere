@@ -2,7 +2,7 @@
 # Entra por SSH al equipo de un bot (local/config.json → "bots"), siempre con la IP al día:
 # si el celular cambió de red, la pantalla de inicio lo encuentra y actualiza la config.
 #   bot-ssh.sh                → te deja adentro del primer bot
-#   bot-ssh.sh amfbot estado  → corre ese comando allá y vuelve
+#   bot-ssh.sh menchobot estado  → corre ese comando allá y vuelve
 # Cuál bot: G5_BOT=id, o el nombre del enlace (ln -s bot-ssh.sh ~/.local/bin/<id>), o el primero.
 CONFIG="$HOME/.config/g5/local/config.json"
 set -- "$(python3 -c '
