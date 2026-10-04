@@ -49,6 +49,7 @@ LANZADORES = {
     "cerrar":    {"cmd": None, "volver": True},
     # Acciones de la categoría "Sistema" del menú
     "wifi":          {"cmd": os.path.expanduser("~/.config/g5/wifi/abrir.sh"), "volver": True},
+    "sombra":        {"cmd": os.path.expanduser("~/.config/g5/sombra/abrir.sh"), "volver": False},
     "brillo_mas":    {"cmd": "brightnessctl s 10%+", "volver": False},
     "brillo_menos":  {"cmd": "brightnessctl s 10%-", "volver": False},
     "recargar":      {"cmd": "swaymsg reload", "volver": False},
@@ -1722,6 +1723,11 @@ class Manejador(BaseHTTPRequestHandler):
         if self.path == "/wifi":
             # Ventana de wifi (Super+Shift+W o tocar el wifi en la barra)
             with open(os.path.join(os.path.dirname(CARPETA), "wifi", "index.html"), "rb") as f:
+                html = f.read().replace(b"__G5_TOKEN__", TOKEN.encode())
+            return self._responder(200, html, "text/html; charset=utf-8")
+        if self.path == "/sombra":
+            # Panel de estado que se baja desde la barra (tocar la barra de arriba)
+            with open(os.path.join(os.path.dirname(CARPETA), "sombra", "index.html"), "rb") as f:
                 html = f.read().replace(b"__G5_TOKEN__", TOKEN.encode())
             return self._responder(200, html, "text/html; charset=utf-8")
         if self.path.split("?")[0] in ("/fondo.jpg", "/bloqueo.jpg"):

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<title>Estado G5</title>
+<style>
+  :root {
+    --green: #367c2b; --green-deep: #1d5a1c; --green-bright: #5ea23a;
+    --status: #0f4a3f; --yellow: #ffde00; --crit: #c8322b; --warn: #e0a100;
+    --font: "Open Sans", "Cantarell", "Noto Sans", sans-serif;
+  }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: #123a33; color: #eef6ee; font: 16px var(--font); box-sizing: border-box;
+    display: grid; grid-template-rows: 1fr auto; overflow: hidden;
+    user-select: none; -webkit-user-select: none; touch-action: manipulation;
+  }
+  button { font-family: var(--font); cursor: pointer; touch-action: manipulation; color: inherit; }
+  .rejilla {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;
+    padding: 14px; align-content: start; overflow: hidden;
+  }
+  .mos {
+    background: #0f4a3f; border: 1px solid #1f6a5a; border-radius: 8px; padding: 12px 14px;
+    display: grid; gap: 8px; align-content: start;
+  }
+  .mos h3 {
+    margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #9fc9bc; font-weight: 700;
+  }
+  .gran { font-size: 34px; font-weight: 700; line-height: 1; }
+  .gran small { font-size: 16px; font-weight: 600; color: #9fc9bc; margin-left: 3px; }
+  .sub { font-size: 14px; color: #b9d8cc; min-height: 18px; }
+  .barra { height: 10px; border-radius: 5px; background: #0a3029; overflow: hidden; }
+  .barra i { display: block; height: 100%; width: 0; background: var(--green-bright); transition: width .4s; }
+  .barra i.mal { background: var(--warn); }
+  .barra i.peor { background: var(--crit); }
+  .fila { display: flex; gap: 8px; align-items: center; }
+  .fila > :first-child { flex: 1; }
+  .btn {
+    min-width: 56px; min-height: 48px; border: 1px solid #1f6a5a; border-radius: 8px;
+    background: linear-gradient(#17695a, #0f4a3f); font-size: 20px; font-weight: 700; padding: 0 14px;
+  }
+  .btn:active { background: var(--yellow); color: #1b211c; }
+  .btn.on { background: var(--yellow); color: #1b211c; }
+  input[type=range] { width: 100%; height: 34px; accent-color: var(--yellow); }
+  .asa {
+    display: grid; place-items: center; height: 40px; border-top: 2px solid #1d4a17;
+    background: linear-gradient(#367c2b, #2f6d25); cursor: pointer;
+  }
+  .asa i { width: 64px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.7); }
+</style>
+</head>
+<body>
+  <div class="rejilla">
+    <section class="mos" id="m-wifi" data-abrir="wifi"><h3>Wifi</h3>
+      <div class="gran" id="ssid">—</div><div class="sub" id="wifi-sub"></div></section>
+    <section class="mos"><h3>Batería</h3>
+      <div class="gran"><span id="bat">—</span><small>%</small></div>
+      <div class="barra"><i id="batG"></i></div><div class="sub" id="bat-sub"></div></section>
+    <section class="mos"><h3>Volumen</h3>
+      <div class="fila"><div class="gran"><span id="vol">—</span><small>%</small></div>
+        <button class="btn" id="mudo" type="button">Mudo</button></div>
+      <input type="range" id="volR" min="0" max="100" step="1"></section>
+    <section class="mos"><h3>Brillo</h3>
+      <div class="fila"><div class="gran"><span id="bri">—</span><small>%</small></div>
+        <button class="btn" type="button" data-lanzar="brillo_menos">−</button>
+        <button class="btn" type="button" data-lanzar="brillo_mas">+</button></div></section>
+    <section class="mos"><h3>Procesador</h3>
+      <div class="gran"><span id="cpu">—</span><small>%</small></div>
+      <div class="barra"><i id="cpuG"></i></div><div class="sub" id="cpu-sub"></div></section>
+    <section class="mos"><h3>Memoria</h3>
+      <div class="gran"><span id="ram">—</span><small>GB</small></div>
+      <div class="barra"><i id="ramG"></i></div><div class="sub" id="ram-sub"></div></section>
+    <section class="mos"><h3>Temperatura</h3>
+      <div class="gran"><span id="temp">—</span><small>°C</small></div>
+      <div class="sub" id="temp-sub"></div></section>
+    <section class="mos"><h3>Disco</h3>
+      <div class="gran"><span id="disco">—</span><small>GB libres</small></div>
+      <div class="barra"><i id="discoG"></i></div></section>
+  </div>
+  <div class="asa" id="asa" title="Tocá o deslizá hacia arriba para cerrar"><i></i></div>
+
+<script>
+  const TOKEN = "__G5_TOKEN__";
+  const $ = (id) => document.getElementById(id);
+  const api = (ruta, cuerpo) => fetch(ruta, {
+    method: cuerpo ? "POST" : "GET",
+    headers: { "X-G5-Token": TOKEN, "Content-Type": "application/json" },
+    body: cuerpo ? JSON.stringify(cuerpo) : undefined
+  }).then(r => { if (r.status === 403) { location.reload(); throw new Error("clave vieja"); } return r.json(); });
+
+  const nivel = (el, pct, malo = 75, peor = 90) => {
+    el.style.width = Math.max(0, Math.min(100, pct)) + "%";
+    el.className = pct >= peor ? "peor" : pct >= malo ? "mal" : "";
+  };
+  const duracion = (m) => m == null ? "" : (m >= 60 ? Math.floor(m / 60) + " h " : "") + (m % 60) + " min";
+  let arrastrando = false;
+
+  async function refrescar() {
+    let d;
+    try { d = await api("/api/datos"); } catch { return; }
+    const r = d.red || {};
+    $("ssid").textContent = r.ssid || "Sin wifi";
+    $("wifi-sub").textContent = r.dbm != null ? r.dbm + " dBm · tocá para elegir red" : "Tocá para elegir red";
+    const b = d.bateria;
+    if (b) {
+      $("bat").textContent = b.pct;
+      const g = $("batG"); g.style.width = b.pct + "%"; g.className = b.pct <= 15 ? "peor" : b.pct <= 30 ? "mal" : "";
+      const est = b.estado === "Charging" ? "Cargando" : b.estado === "Discharging" ? "Descargando" : b.estado === "Full" ? "Llena" : "Enchufada";
+      const tiempo = duracion(b.minutos);
+      $("bat-sub").textContent = est + (tiempo ? " · " + tiempo : "") + (b.watts != null ? " · " + b.watts + " W" : "");
+    } else $("bat").textContent = "—";
+    const v = d.volumen || {};
+    $("vol").textContent = v.mudo ? "Mudo" : (v.pct ?? "—");
+    $("mudo").classList.toggle("on", !!v.mudo);
+    if (!arrastrando && v.pct != null) $("volR").value = v.pct;
+    $("bri").textContent = d.brillo ?? "—";
+    const c = Math.round(d.cpu ?? 0);
+    $("cpu").textContent = c; nivel($("cpuG"), c);
+    $("cpu-sub").textContent = d.hilos ? d.hilos + " hilos" : "";
+    const ram = d.ram || 0, tot = d.ram_total || 1;
+    $("ram").textContent = ram.toFixed(1);
+    nivel($("ramG"), 100 * ram / tot);
+    $("ram-sub").textContent = "de " + tot.toFixed(1) + " GB";
+    $("temp").textContent = d.temp ?? "—";
+    const f = d.ventilador;
+    $("temp-sub").textContent = [d.temp_gpu != null ? "GPU " + d.temp_gpu + "°" : "", d.temp_disco != null ? "disco " + d.temp_disco + "°" : "",
+      f ? "ventilador " + f.rpm + " rpm" : ""].filter(Boolean).join(" · ");
+    const k = d.disco || {};
+    $("disco").textContent = k.libre ?? "—";
+    nivel($("discoG"), k.pct ?? 0);
+  }
+
+  const cerrar = () => api("/api/lanzar", { que: "sombra" }).catch(() => {});
+  $("asa").addEventListener("click", cerrar);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") cerrar(); });
+  let y0 = null;
+  document.addEventListener("touchstart", (e) => { y0 = e.touches[0].clientY; }, { passive: true });
+  document.addEventListener("touchend", (e) => {
+    if (y0 !== null && y0 - e.changedTouches[0].clientY > 60) cerrar();
+    y0 = null;
+  }, { passive: true });
+
+  document.querySelectorAll("[data-lanzar]").forEach((b) =>
+    b.addEventListener("click", () => api("/api/lanzar", { que: b.dataset.lanzar }).then(refrescar).catch(() => {})));
+  $("m-wifi").addEventListener("click", () => api("/api/lanzar", { que: "wifi" }).catch(() => {}));
+  $("mudo").addEventListener("click", () => api("/api/musica", { accion: "silencio" }).then(refrescar).catch(() => {}));
+  const volR = $("volR");
+  volR.addEventListener("input", () => { arrastrando = true; $("vol").textContent = volR.value; });
+  volR.addEventListener("change", () => {
+    api("/api/musica", { accion: "volumen", pct: parseInt(volR.value, 10) }).catch(() => {}).finally(() => { arrastrando = false; refrescar(); });
+  });
+
+  refrescar();
+  setInterval(refrescar, 2000);
+</script>
+</body>
+</html>

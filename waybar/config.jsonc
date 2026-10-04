@@ -3,38 +3,56 @@
 {
     "include": ["~/.config/waybar/config"],
 
-    "height": 34,
+    "height": 52,
 
-    // Izquierda = barra de título verde (escritorios + ventana activa)
+    // Izquierda = la "Run Page" de la cosechadora: los escritorios 1, 2, 3 son las Run Pages
     "modules-left": [
+        "custom/runpage",
         "sway/workspaces",
-        "sway/mode",
+        "sway/mode"
+    ],
+    "modules-center": [
         "sway/window"
     ],
-    "modules-center": [],
-    // Derecha = bloque de estado verde azulado, como en la G5
     "modules-right": [
-        "pulseaudio",
-        "network",
         "image#carga-red",
-        "memory",
-        "cpu",
-        "temperature",
-        "custom/keyboard-layout",
-        "custom/tapa",
+        "network",
         "battery",
+        "custom/tapa",
         "tray",
         "clock#date",
         "clock#time",
+        "custom/estado",
         "custom/inicio"
     ],
 
+    "custom/runpage": {
+        "format": "Run Page",
+        "tooltip": false
+    },
+
+    // Botón del panel de estado (wifi, volumen, brillo, CPU, memoria, temperaturas...)
+    "custom/estado": {
+        "format": "  ▾  ",
+        "on-click": "~/.config/g5/sombra/abrir.sh",
+        "tooltip": true,
+        "tooltip-format": "Estado del equipo (Super+Shift+S)"
+    },
+
+    "battery": {
+        "format": "{icon}  {capacity}%",
+        "format-charging": "\uf0e7  {capacity}%",
+        "format-plugged": "\uf1e6  {capacity}%",
+        "tooltip-format": "{timeTo}",
+        "on-click": "~/.config/g5/sombra/abrir.sh"
+    },
+
     "network": {
         "interval": 5,
-        "format-wifi": "  {essid} {signalStrength}%",
-        "format-ethernet": "  {ifname}",
+        "format-wifi": "\uf1eb  {signalStrength}%",
+        "format-ethernet": "\uf796  Cable",
         "format-disconnected": "⚠  Sin wifi",
-        "tooltip-format": "{ifname}: {ipaddr}/{cidr}\nTocá para elegir red",
+        "tooltip-format": "{essid}\n{ifname}: {ipaddr}/{cidr}\nTocá para elegir red",
         "on-click": "~/.config/g5/wifi/abrir.sh"
     },
 
@@ -51,17 +69,6 @@
         "tooltip": true
     },
 
-    // Volumen: con parlante Bluetooth se ve el símbolo en celeste y el nombre
-    // del aparato adelante, en vez del símbolo pegado atrás del porcentaje.
-    "pulseaudio": {
-        "format": "{icon}  {volume}%",
-        "format-bluetooth": "<span color='#7cc4ff'>\uf294</span> <span color='#9fc9bc'>{desc}</span>   {icon}  {volume}%",
-        "format-bluetooth-muted": "<span color='#7cc4ff'>\uf294</span> <span color='#9fc9bc'>{desc}</span>   <span color='#e0453c'>\uf026  Mudo</span>",
-        "format-muted": "<span color='#e0453c'>\uf026  Mudo</span>",
-        "tooltip-format": "{desc} · {volume}%",
-        "on-click": "pavucontrol"
-    },
-
     "clock#time": {
         "interval": 10,
         "format": "{:%H:%M}",
@@ -70,7 +77,7 @@
 
     "sway/window": {
         "format": "{}",
-        "max-length": 80
+        "max-length": 60
     },
 
     // Botón verde que abre la pantalla de inicio (igual que Super+G)

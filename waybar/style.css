@@ -2,34 +2,46 @@
 @import url("../../waybar/style.css");   /* la barra de Carlos */
 
 #waybar {
-    background: #0f4a3f;          /* bloque de estado verde azulado */
+    /* La barra de título de la cosechadora: el mismo verde de la pantalla de inicio */
+    background-image: linear-gradient(#4a9433, #367c2b 45%, #2f6d25);
+    border-bottom: 2px solid #1d4a17;
+    color: #ffffff;
     /* Open Sans: la letra de los menús del monitor G5 */
     font-family: "Open Sans", "Cantarell", "Symbols Nerd Font", "Font Awesome 7 Free", sans-serif;
-    font-size: 14px;
+    font-size: 16px;
 }
 
-/* Barra de título verde con degradé */
-.modules-left {
-    background-image: linear-gradient(90deg, #1d5a1c, #367c2b 55%, #5ea23a);
-    padding-right: 28px;
+.modules-left { padding-left: 6px; }
+
+/* "Run Page" + los escritorios 1, 2, 3 como fichas grandes para el dedo */
+#custom-runpage {
+    font-size: 24px;
+    font-weight: bold;
+    padding: 0 16px 0 14px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .35);
 }
 
 #window {
     font-size: 16px;
-    font-weight: bold;
-    padding-left: 12px;
+    padding: 0 12px;
+    color: #d8ecd0;
 }
 
-/* Escritorios: grandes para el dedo, el activo en amarillo */
 #workspaces button {
-    min-width: 34px;
-    padding: 0 6px;
-    border-top: none;
+    min-width: 46px;
+    margin: 6px 3px;
+    padding: 0 8px;
+    border: none;
+    border-radius: 6px;
     color: #ffffff;
-    background: transparent;
+    background: rgba(0, 0, 0, .22);
 }
 #workspaces button label {
-    color: #d8ecd0;
+    color: #e6f3df;
+    font-size: 18px;
+}
+#workspaces button:hover {
+    background: rgba(0, 0, 0, .35);
 }
 #workspaces button.focused {
     background: #ffde00;
@@ -52,24 +64,26 @@
 }
 
 /* Cada dato del bloque de estado, separado por una rayita */
-#pulseaudio, #network, #memory, #cpu, #temperature,
-#custom-keyboard-layout, #battery, #tray, #clock {
-    padding: 0 10px;
-    border-left: 1px solid #1f6a5a;
+#network, #battery, #tray, #clock {
+    padding: 0 12px;
+    border-left: 1px solid rgba(0, 0, 0, .25);
 }
 
 #clock.time {
-    font-size: 16px;
-}
-
-/* Botón "Inicio": el cuadrado verde de Menú de la G5 */
-#custom-inicio {
-    background: #367c2b;
-    padding: 0 12px;
+    font-size: 22px;
     font-weight: bold;
 }
-#custom-inicio:hover {
-    background: #5ea23a;
+
+/* Botones de la derecha: el de estado (baja el panel) y el de Inicio, como las teclas del monitor */
+#custom-estado, #custom-inicio {
+    background-image: linear-gradient(#3d8a2c, #2a6420);
+    border-left: 1px solid rgba(0, 0, 0, .3);
+    padding: 0 14px;
+    font-weight: bold;
+}
+#custom-estado { font-size: 20px; }
+#custom-estado:hover, #custom-inicio:hover {
+    background-image: linear-gradient(#5ea23a, #3d8a2c);
 }
 
 /* Modo tapa cerrada: apagado es un iconito tenue; prendido va en amarillo, como lo seleccionado en la G5 */

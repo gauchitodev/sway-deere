@@ -136,30 +136,28 @@
   .mod.g .bars i { width: 34px; }
 
   /* Barra de Run Pages */
-  /* Barra de título verde, como la del monitor: nombre a la izquierda, hora y flechas a la derecha */
+  /* Tira de Run Pages de la pantalla de inicio: chica y de vidrio. La barra verde grande
+     (título + hora) ahora es la Waybar de arriba, así no quedan dos */
   .pagebar {
-    grid-row: 2; display: flex; align-items: stretch; min-height: 62px;
-    background: linear-gradient(#4a9433, var(--green) 45%, #2f6d25); color: #fff;
-    border-bottom: 2px solid #1d4a17;
+    grid-row: 2; display: flex; align-items: stretch; min-height: 46px;
+    background: rgba(18, 38, 20, .55); color: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, .35);
   }
   .pagebar[hidden] { display: none !important; }
-  .pgname { flex: 1; display: flex; align-items: center; gap: 18px; padding: 0 22px; min-width: 0; font-size: 26px; }
+  .pgname { flex: 1; display: flex; align-items: center; gap: 16px; padding: 0 20px; min-width: 0; font-size: 20px; }
   .pgname b { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
   #pgDots { display: flex; gap: 7px; }
   #pgDots[hidden] { display: none; }
   #pgDots i { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, .35); }
   #pgDots i.on { background: #fff; }
-  .pghora {
-    display: flex; align-items: center; padding: 0 22px; font-size: 22px; font-weight: 700;
-    font-variant-numeric: tabular-nums; border-left: 1px solid rgba(0, 0, 0, .25);
-  }
+  .pghora { display: none; }
   .pgflechas { display: flex; }
   .pgflechas[hidden] { display: none; }
   .pagebar button {
-    width: 96px; border: 0; border-left: 1px solid rgba(0, 0, 0, .3); cursor: pointer; color: #fff;
-    background: linear-gradient(#3d8a2c, #2a6420); display: grid; place-items: center;
+    width: 80px; border: 0; border-left: 1px solid rgba(0, 0, 0, .3); cursor: pointer; color: #fff;
+    background: rgba(61, 138, 44, .55); display: grid; place-items: center;
   }
-  .pagebar button svg { width: 36px; height: 36px; }
+  .pagebar button svg { width: 30px; height: 30px; }
   .pagebar button:active { background: #1d4a17; }
   .pagebar button:disabled { opacity: .35; }
   .mod h3 {
