@@ -8,46 +8,43 @@
     color: #ffffff;
     /* Open Sans: la letra de los menús del monitor G5 */
     font-family: "Open Sans", "Cantarell", "Symbols Nerd Font", "Font Awesome 7 Free", sans-serif;
-    font-size: 16px;
+    font-size: 13px;
 }
 
 .modules-left { padding-left: 6px; }
 
-/* "Run Page" + los escritorios 1, 2, 3 como fichas grandes para el dedo */
-#custom-runpage {
-    font-size: 24px;
-    font-weight: bold;
-    padding: 0 16px 0 14px;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, .35);
-}
-
 #window {
-    font-size: 16px;
+    font-size: 13px;
     padding: 0 12px;
     color: #d8ecd0;
 }
 
+/* Run Pages: puntitos; la activa es una pastilla amarilla con su número */
 #workspaces button {
-    min-width: 46px;
-    margin: 6px 3px;
-    padding: 0 8px;
+    min-width: 8px;
+    min-height: 8px;
+    margin: 9px 4px;
+    padding: 0;
     border: none;
-    border-radius: 6px;
-    color: #ffffff;
-    background: rgba(0, 0, 0, .22);
+    border-radius: 99px;
+    background: rgba(255, 255, 255, .55);
 }
 #workspaces button label {
-    color: #e6f3df;
-    font-size: 18px;
+    color: transparent;
+    font-size: 1px;
 }
 #workspaces button:hover {
-    background: rgba(0, 0, 0, .35);
+    background: rgba(255, 255, 255, .9);
 }
 #workspaces button.focused {
+    min-width: 22px;
+    min-height: 16px;
+    margin: 6px 4px;
     background: #ffde00;
 }
 #workspaces button.focused label {
     color: #1b211c;
+    font-size: 12px;
     font-weight: bold;
 }
 #workspaces button.urgent {
@@ -65,24 +62,23 @@
 
 /* Cada dato del bloque de estado, separado por una rayita */
 #network, #battery, #tray, #clock {
-    padding: 0 12px;
+    padding: 0 8px;
     border-left: 1px solid rgba(0, 0, 0, .25);
 }
 
 #clock.time {
-    font-size: 22px;
+    font-size: 15px;
     font-weight: bold;
 }
 
-/* Botones de la derecha: el de estado (baja el panel) y el de Inicio, como las teclas del monitor */
-#custom-estado, #custom-inicio {
+/* Botones de la derecha: el de Inicio, como las teclas del monitor */
+#custom-inicio {
     background-image: linear-gradient(#3d8a2c, #2a6420);
     border-left: 1px solid rgba(0, 0, 0, .3);
-    padding: 0 14px;
+    padding: 0 8px;
     font-weight: bold;
 }
-#custom-estado { font-size: 20px; }
-#custom-estado:hover, #custom-inicio:hover {
+#custom-inicio:hover {
     background-image: linear-gradient(#5ea23a, #3d8a2c);
 }
 

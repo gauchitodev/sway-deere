@@ -8,6 +8,9 @@ YO=$(id -u)
 PUERTO="${G5_PUERTO:-$((8765 + (YO > 1000 ? YO - 1000 : 0) % 1000))}"
 
 existe=$(swaymsg -t get_tree | jq --arg a "$APP" '[.. | objects | select((.app_id // "") == $a)] | length')
+# "abrir" solo abre y "cerrar" solo cierra (lo usan los gestos); sin nada, alterna
+[ "$1" = abrir ] && [ "$existe" -gt 0 ] && exit 0
+[ "$1" = cerrar ] && [ "$existe" -eq 0 ] && exit 0
 if [ "$existe" -gt 0 ]; then
     swaymsg "[app_id=\"$APP\"] kill" >/dev/null
     exit 0

@@ -3,11 +3,10 @@
 {
     "include": ["~/.config/waybar/config"],
 
-    "height": 52,
+    "height": 28,
 
-    // Izquierda = la "Run Page" de la cosechadora: los escritorios 1, 2, 3 son las Run Pages
+    // Izquierda: las Run Pages de la cosechadora como puntitos; la activa muestra su número
     "modules-left": [
-        "custom/runpage",
         "sway/workspaces",
         "sway/mode"
     ],
@@ -22,22 +21,8 @@
         "tray",
         "clock#date",
         "clock#time",
-        "custom/estado",
         "custom/inicio"
     ],
-
-    "custom/runpage": {
-        "format": "Run Page",
-        "tooltip": false
-    },
-
-    // Botón del panel de estado (wifi, volumen, brillo, CPU, memoria, temperaturas...)
-    "custom/estado": {
-        "format": "  ▾  ",
-        "on-click": "~/.config/g5/sombra/abrir.sh",
-        "tooltip": true,
-        "tooltip-format": "Estado del equipo (Super+Shift+S)"
-    },
 
     "battery": {
         "format": "{icon}  {capacity}%",
@@ -75,6 +60,11 @@
         "tooltip": false
     },
 
+    "sway/workspaces": {
+        "format": "{name}",
+        "disable-scroll": true
+    },
+
     "sway/window": {
         "format": "{}",
         "max-length": 60
@@ -92,7 +82,7 @@
     },
 
     "custom/inicio": {
-        "format": "  Inicio ",
+        "format": " Inicio ",
         "on-click": "~/.config/g5/home/inicio.sh",
         "tooltip": false
     }
