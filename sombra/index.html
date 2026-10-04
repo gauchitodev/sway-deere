@@ -152,6 +152,8 @@
     api("/api/musica", { accion: "volumen", pct: parseInt(volR.value, 10) }).catch(() => {}).finally(() => { arrastrando = false; refrescar(); });
   });
 
+  // La ventana queda escondida entre usos: al mostrarse, ponerla al día enseguida
+  window.addEventListener("focus", refrescar);
   refrescar();
   setInterval(refrescar, 2000);
 </script>
