@@ -16,6 +16,7 @@
     "modules-right": [
         "image#carga-red",
         "network",
+        "custom/keyboard-layout",
         "battery",
         "custom/tapa",
         "tray",
@@ -39,6 +40,12 @@
         "format-disconnected": "⚠  Sin wifi",
         "tooltip-format": "{essid}\n{ifname}: {ipaddr}/{cidr}\nTocá para elegir red",
         "on-click": "~/.config/g5/wifi/abrir.sh"
+    },
+
+    // Teclado en uso (US / LATAM). El módulo viene de la config de Carlos;
+    // acá solo se suma que tocándolo cambia de uno al otro (igual que Super+N / Super+M).
+    "custom/keyboard-layout": {
+        "on-click": "~/.config/g5/waybar/teclado.sh"
     },
 
     // Carga del internet: rampa al lado del wifi, como la carga del motor de la cosechadora
